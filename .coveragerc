@@ -1,0 +1,6 @@
+[run]
+branch = True
+source = paunch
+
+[report]
+ignore_errors = True
