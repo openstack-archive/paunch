@@ -11,25 +11,95 @@
 #   under the License.
 #
 
+import collections
 import logging
 
 from cliff.command import Command
+import yaml
+
+import paunch
 
 
 class Apply(Command):
 
     log = logging.getLogger(__name__)
 
+    def get_parser(self, prog_name):
+        parser = super(Apply, self).get_parser(prog_name)
+        parser.add_argument(
+            '--file',
+            metavar='<file>',
+            required=True,
+            help=('YAML or JSON file containing configuration data'),
+        )
+        parser.add_argument(
+            '--label',
+            metavar='<label=value>',
+            dest='labels',
+            default=[],
+            help=('Extra labels to apply to containers in this config, in the '
+                  'form label=value.'),
+        )
+        parser.add_argument(
+            '--managed-by',
+            metavar='<name>',
+            dest='managed_by',
+            default='paunch',
+            help=('Override the name of the tool managing the containers'),
+        )
+        parser.add_argument(
+            'config_id',
+            metavar='<config_id>',
+            help=('Identifier for the config, unique to the service managing '
+                  'the containers'),
+        )
+        return parser
+
     def take_action(self, parsed_args):
-        pass
+
+        labels = collections.OrderedDict()
+        for l in parsed_args.labels:
+            k, v = l.split(('='), 1)
+            labels[k] = v
+
+        with open(parsed_args.file, 'r') as f:
+            config = yaml.safe_load(f)
+
+        paunch.apply(
+            parsed_args.config_id,
+            config,
+            managed_by='paunch',
+            labels=labels
+        )
 
 
 class Cleanup(Command):
 
     log = logging.getLogger(__name__)
 
+    def get_parser(self, prog_name):
+        parser = super(Cleanup, self).get_parser(prog_name)
+        parser.add_argument(
+            'config_id',
+            metavar='<config_id>',
+            dest='config_ids',
+            help=('Identifiers for the configs which still apply, all others '
+                  'will be deleted.'),
+        )
+        parser.add_argument(
+            '--managed-by',
+            metavar='<name>',
+            dest='managed_by',
+            default='paunch',
+            help=('Override the name of the tool managing the containers'),
+        )
+        return parser
+
     def take_action(self, parsed_args):
-        pass
+        paunch.cleanup(
+            parsed_args.config_ids,
+            managed_by=parsed_args.managed_by
+        )
 
 
 class Delete(Command):
@@ -45,4 +115,12 @@ class List(Command):
     log = logging.getLogger(__name__)
 
     def take_action(self, parsed_args):
-        pass
+        paunch.list()
+
+
+class Show(Command):
+
+    log = logging.getLogger(__name__)
+
+    def take_action(self, parsed_args):
+        paunch.list()
