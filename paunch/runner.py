@@ -19,135 +19,141 @@ import string
 import subprocess
 
 
-DOCKER_CMD = os.environ.get('HEAT_DOCKER_CMD', 'docker')
-
 LOG = logging.getLogger(__name__)
 
 
-def execute(cmd):
-    LOG.debug(' '.join(cmd))
-    subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE)
-    cmd_stdout, cmd_stderr = subproc.communicate()
-    LOG.debug(cmd_stdout)
-    LOG.debug(cmd_stderr)
-    return cmd_stdout, cmd_stderr, subproc.returncode
+class DockerRunner(object):
 
+    def __init__(self, managed_by, docker_cmd=None):
+        self.managed_by = managed_by
+        self.docker_cmd = docker_cmd or os.environ.get(
+            'PAUNCH_DOCKER_CMD', 'docker')
 
-def current_config_ids():
-    # List all config_id labels for containers managed by docker-cmd
-    cmd = [
-        DOCKER_CMD, 'ps', '-a',
-        '--filter', 'label=managed_by=docker-cmd',
-        '--format', '{{.Label "config_id"}}'
-    ]
-    cmd_stdout, cmd_stderr, returncode = execute(cmd)
-    if returncode != 0:
-        return set()
-    return set(cmd_stdout.split())
+    @staticmethod
+    def execute(cmd):
+        LOG.debug(' '.join(cmd))
+        subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        cmd_stdout, cmd_stderr = subproc.communicate()
+        LOG.debug(cmd_stdout)
+        LOG.debug(cmd_stderr)
+        return cmd_stdout, cmd_stderr, subproc.returncode
 
+    def current_config_ids(self):
+        # List all config_id labels for managed containers
+        cmd = [
+            self.docker_cmd, 'ps', '-a',
+            '--filter', 'label=managed_by=%s' % self.managed_by,
+            '--format', '{{.Label "config_id"}}'
+        ]
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        if returncode != 0:
+            return set()
+        return set(cmd_stdout.split())
 
-def remove_containers(conf_id, managed_by):
-    cmd = [
-        DOCKER_CMD, 'ps', '-q', '-a',
-        '--filter', 'label=managed_by=%s' % managed_by,
-        '--filter', 'label=config_id=%s' % conf_id
-    ]
-    cmd_stdout, cmd_stderr, returncode = execute(cmd)
-    if returncode == 0:
-        for container in cmd_stdout.split():
-            remove_container(container)
+    def remove_containers(self, conf_id):
+        cmd = [
+            self.docker_cmd, 'ps', '-q', '-a',
+            '--filter', 'label=managed_by=%s' % self.managed_by,
+            '--filter', 'label=config_id=%s' % conf_id
+        ]
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        if returncode == 0:
+            for container in cmd_stdout.split():
+                self.remove_container(container)
 
+    def remove_container(self, container):
+        cmd = [self.docker_cmd, 'rm', '-f', container]
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        if returncode != 0:
+            LOG.error('Error removing container: %s' % container)
+            LOG.error(cmd_stderr)
 
-def remove_container(container):
-    cmd = [DOCKER_CMD, 'rm', '-f', container]
-    cmd_stdout, cmd_stderr, returncode = execute(cmd)
-    if returncode != 0:
-        LOG.error('Error removing container: %s' % container)
-        LOG.error(cmd_stderr)
+    def rename_containers(self):
+        # list every container name, and its container_name label
+        cmd = [
+            self.docker_cmd, 'ps', '-a',
+            '--filter', 'label=managed_by=%s' % self.managed_by,
+            '--format', '{{.Names}} {{.Label "container_name"}}'
+        ]
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        if returncode != 0:
+            return
 
+        lines = cmd_stdout.split("\n")
+        current_containers = []
+        need_renaming = {}
+        for line in lines:
+            entry = line.split()
+            if not entry:
+                continue
+            current_containers.append(entry[0])
 
-def rename_containers():
-    # list every container name, and its container_name label
-    cmd = [
-        DOCKER_CMD, 'ps', '-a',
-        '--format', '{{.Names}} {{.Label "container_name"}}'
-    ]
-    cmd_stdout, cmd_stderr, returncode = execute(cmd)
-    if returncode != 0:
-        return
+            # ignore if container_name label not set
+            if len(entry) < 2:
+                continue
 
-    lines = cmd_stdout.split("\n")
-    current_containers = []
-    need_renaming = {}
-    for line in lines:
-        entry = line.split()
-        if not entry:
-            continue
-        current_containers.append(entry[0])
+            # ignore if desired name is already actual name
+            if entry[0] == entry[-1]:
+                continue
 
-        # ignore if container_name label not set
-        if len(entry) < 2:
-            continue
+            need_renaming[entry[0]] = entry[-1]
 
-        # ignore if desired name is already actual name
-        if entry[0] == entry[-1]:
-            continue
+        for current, desired in sorted(need_renaming.items()):
+            if desired in current_containers:
+                LOG.info('Cannot rename "%s" since "%s" still exists' % (
+                    current, desired))
+            else:
+                cmd = [self.docker_cmd, 'rename', current, desired]
+                self.execute(cmd)
 
-        need_renaming[entry[0]] = entry[-1]
-
-    for current, desired in sorted(need_renaming.items()):
-        if desired in current_containers:
-            LOG.info('Cannot rename "%s" since "%s" still exists' % (
-                current, desired))
-        else:
-            cmd = [DOCKER_CMD, 'rename', current, desired]
-            execute(cmd)
-
-
-def inspect(container, format=None):
-    cmd = [DOCKER_CMD, 'inspect']
-    if format:
-        cmd.append('--format')
-        cmd.append(format)
-    cmd.append(container)
-    (cmd_stdout, cmd_stderr, returncode) = execute(cmd)
-    if returncode != 0:
-        return
-    try:
+    def inspect(self, container, format=None):
+        cmd = [self.docker_cmd, 'inspect']
         if format:
-            return cmd_stdout
-        else:
-            return json.loads(cmd_stdout)[0]
-    except Exception as e:
-        LOG.error('Problem parsing docker inspect: %s' % e)
+            cmd.append('--format')
+            cmd.append(format)
+        cmd.append(container)
+        (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd)
+        if returncode != 0:
+            return
+        try:
+            if format:
+                return cmd_stdout
+            else:
+                return json.loads(cmd_stdout)[0]
+        except Exception as e:
+            LOG.error('Problem parsing docker inspect: %s' % e)
 
+    def unique_container_name(self, container):
+        container_name = container
+        while self.inspect(container_name, format='exists'):
+            suffix = ''.join(random.choice(
+                string.ascii_lowercase + string.digits) for i in range(8))
+            container_name = '%s-%s' % (container, suffix)
+        return container_name
 
-def unique_container_name(container):
-    container_name = container
-    while inspect(container_name, format='exists'):
-        suffix = ''.join(random.choice(
-            string.ascii_lowercase + string.digits) for i in range(8))
-        container_name = '%s-%s' % (container, suffix)
-    return container_name
-
-
-def discover_container_name(container, cid):
-    cmd = [
-        DOCKER_CMD,
-        'ps',
-        '-a',
-        '--filter',
-        'label=container_name=%s' % container,
-        '--filter',
-        'label=config_id=%s' % cid,
-        '--format',
-        '{{.Names}}'
-    ]
-    (cmd_stdout, cmd_stderr, returncode) = execute(cmd)
-    if returncode != 0:
+    def discover_container_name(self, container, cid):
+        cmd = [
+            self.docker_cmd,
+            'ps',
+            '-a',
+            '--filter',
+            'label=container_name=%s' % container,
+            '--filter',
+            'label=config_id=%s' % cid,
+            '--format',
+            '{{.Names}}'
+        ]
+        (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd)
+        if returncode != 0:
+            return container
+        names = cmd_stdout.split()
+        if names:
+            return names[0]
         return container
-    names = cmd_stdout.split()
-    if names:
-        return names[0]
-    return container
+
+    def delete_missing_configs(self, config_ids):
+        for conf_id in self.current_config_ids():
+            if conf_id not in config_ids:
+                LOG.debug('%s no longer exists, deleting containers' % conf_id)
+                self.remove_containers(conf_id)

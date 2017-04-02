@@ -25,18 +25,20 @@ LOG = logging.getLogger(__name__)
 
 
 def apply(config_id, config, managed_by, labels=None):
+    r = runner.DockerRunner(managed_by)
     builder = compose1.ComposeV1Builder(
         config_id=config_id,
         config=config,
-        managed_by=managed_by,
+        runner=r,
         labels=labels
     )
     return builder.apply()
 
 
 def cleanup(config_ids, managed_by):
-    runner.delete_missing_configs(config_ids)
-    runner.rename_containers()
+    r = runner.DockerRunner(managed_by)
+    r.delete_missing_configs(config_ids)
+    r.rename_containers()
 
 
 def list():

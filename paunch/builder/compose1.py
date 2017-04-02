@@ -13,18 +13,16 @@
 
 import logging
 
-from paunch import runner
-
 LOG = logging.getLogger(__name__)
 
 
 class ComposeV1Builder(object):
 
-    def __init__(self, config_id, config, managed_by, labels=None):
+    def __init__(self, config_id, config, runner, labels=None):
         self.config_id = config_id
         self.config = config
         self.labels = labels
-        self.managed_by = managed_by
+        self.runner = runner
 
     def apply(self):
 
@@ -39,18 +37,18 @@ class ComposeV1Builder(object):
 
             if action == 'run':
                 cmd = [
-                    runner.DOCKER_CMD,
+                    self.runner.DOCKER_CMD,
                     'run',
                     '--name',
-                    runner.unique_container_name(container)
+                    self.runner.unique_container_name(container)
                 ]
                 self.label_arguments(cmd)
                 self.docker_run_args(cmd, container)
             elif action == 'exec':
-                cmd = [runner.DOCKER_CMD, 'exec']
+                cmd = [self.runner.DOCKER_CMD, 'exec']
                 self.docker_exec_args(cmd, container)
 
-            (cmd_stdout, cmd_stderr, returncode) = runner.execute(cmd)
+            (cmd_stdout, cmd_stderr, returncode) = self.runner.execute(cmd)
             if cmd_stdout:
                 stdout.append(cmd_stdout)
             if cmd_stderr:
@@ -73,7 +71,7 @@ class ComposeV1Builder(object):
             '--label',
             'container_name=%s' % container,
             '--label',
-            'managed_by=%s' % self.managed_by
+            'managed_by=%s' % self.runner.managed_by
         ])
 
     def docker_run_args(self, cmd, container):
@@ -112,7 +110,8 @@ class ComposeV1Builder(object):
         command = self.command_argument(cmd, cconfig.get('command'))
         # for exec, the first argument is the container name,
         # make sure the correct one is used
-        command[0] = runner.discover_container_name(command[0], self.config_id)
+        command[0] = self.runner.discover_container_name(
+            command[0], self.config_id)
         cmd.extend(command)
 
     def command_argument(self, cmd, command):
