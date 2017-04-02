@@ -12,17 +12,58 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-"""
-test_paunch
-----------------------------------
+import mock
 
-Tests for `paunch` module.
-"""
-
+import paunch
 from paunch.tests import base
 
 
 class TestPaunch(base.TestCase):
 
-    def test_something(self):
-        pass
+    @mock.patch('paunch.builder.compose1.ComposeV1Builder', autospec=True)
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_apply(self, runner, builder):
+        paunch.apply('foo', {'bar': 'baz'}, 'tester')
+        runner.assert_called_once_with('tester')
+        builder.assert_called_once_with(
+            config_id='foo',
+            config={'bar': 'baz'},
+            runner=runner.return_value,
+            labels=None
+        )
+        builder.return_value.apply.assert_called_once_with()
+
+    @mock.patch('paunch.builder.compose1.ComposeV1Builder', autospec=True)
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_apply_labels(self, runner, builder):
+        paunch.apply(
+            config_id='foo',
+            config={'bar': 'baz'},
+            managed_by='tester',
+            labels={'bink': 'boop'})
+
+        runner.assert_called_once_with('tester')
+        builder.assert_called_once_with(
+            config_id='foo',
+            config={'bar': 'baz'},
+            runner=runner.return_value,
+            labels={'bink': 'boop'}
+        )
+        builder.return_value.apply.assert_called_once_with()
+
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_cleanup(self, runner):
+        paunch.cleanup(['foo', 'bar'], 'tester')
+        runner.assert_called_once_with('tester')
+        runner.return_value.delete_missing_configs.assert_called_once_with(
+            ['foo', 'bar'])
+        runner.return_value.rename_containers.assert_called_once_with()
+
+    def test_list(self):
+        self.assertRaises(NotImplementedError, paunch.list)
+
+    def test_show(self):
+        self.assertRaises(NotImplementedError, paunch.show, 'foo')
+
+    def test_delete(self):
+        self.assertRaises(NotImplementedError, paunch.delete, 'foo')
