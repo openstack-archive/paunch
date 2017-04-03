@@ -104,8 +104,14 @@ class DockerRunner(object):
                 LOG.info('Cannot rename "%s" since "%s" still exists' % (
                     current, desired))
             else:
-                cmd = [self.docker_cmd, 'rename', current, desired]
-                self.execute(cmd)
+                self.rename_container(current, desired)
+
+    def rename_container(self, container, name):
+        cmd = [self.docker_cmd, 'rename', container, name]
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        if returncode != 0:
+            LOG.error('Error renaming container: %s' % container)
+            LOG.error(cmd_stderr)
 
     def inspect(self, container, format=None):
         cmd = [self.docker_cmd, 'inspect']
@@ -156,4 +162,4 @@ class DockerRunner(object):
         for conf_id in self.current_config_ids():
             if conf_id not in config_ids:
                 LOG.debug('%s no longer exists, deleting containers' % conf_id)
-                self.remove_containers(conf_id)
+                self.remove_container(conf_id)
