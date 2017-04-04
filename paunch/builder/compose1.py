@@ -37,15 +37,15 @@ class ComposeV1Builder(object):
 
             if action == 'run':
                 cmd = [
-                    self.runner.DOCKER_CMD,
+                    self.runner.docker_cmd,
                     'run',
                     '--name',
                     self.runner.unique_container_name(container)
                 ]
-                self.label_arguments(cmd)
+                self.label_arguments(cmd, container)
                 self.docker_run_args(cmd, container)
             elif action == 'exec':
-                cmd = [self.runner.DOCKER_CMD, 'exec']
+                cmd = [self.runner.docker_cmd, 'exec']
                 self.docker_exec_args(cmd, container)
 
             (cmd_stdout, cmd_stderr, returncode) = self.runner.execute(cmd)
@@ -81,6 +81,7 @@ class ComposeV1Builder(object):
         for v in cconfig.get('environment', []):
             if v:
                 cmd.append('--env=%s' % v)
+        # TODO(sbaker) implement --env-file
         if 'net' in cconfig:
             cmd.append('--net=%s' % cconfig['net'])
         if 'pid' in cconfig:
@@ -99,7 +100,7 @@ class ComposeV1Builder(object):
                 cmd.append('--volumes_from=%s' % v)
 
         cmd.append(cconfig.get('image', ''))
-        cmd.extend(self.command_argument(cmd, cconfig.get('command')))
+        cmd.extend(self.command_argument(cconfig.get('command')))
 
     def docker_exec_args(self, cmd, container):
         cconfig = self.config[container]
@@ -107,16 +108,18 @@ class ComposeV1Builder(object):
             cmd.append('--privileged=%s' % str(cconfig['privileged']).lower())
         if 'user' in cconfig:
             cmd.append('--user=%s' % cconfig['user'])
-        command = self.command_argument(cmd, cconfig.get('command'))
+        command = self.command_argument(cconfig.get('command'))
         # for exec, the first argument is the container name,
         # make sure the correct one is used
-        command[0] = self.runner.discover_container_name(
-            command[0], self.config_id)
+        if command:
+            command[0] = self.runner.discover_container_name(
+                command[0], self.config_id)
         cmd.extend(command)
 
-    def command_argument(self, cmd, command):
+    @staticmethod
+    def command_argument(command):
         if not command:
             return []
         if not isinstance(command, list):
-            return [command]
+            return command.split()
         return command
