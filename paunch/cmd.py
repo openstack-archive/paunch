@@ -47,12 +47,6 @@ class Apply(Command):
             default='paunch',
             help=('Override the name of the tool managing the containers'),
         )
-        parser.add_argument(
-            'config_id',
-            metavar='<config_id>',
-            help=('Identifier for the config, unique to the tool managing '
-                  'the containers'),
-        )
         return parser
 
     def take_action(self, parsed_args):
@@ -106,7 +100,24 @@ class Delete(Command):
 
     log = logging.getLogger(__name__)
 
+    def get_parser(self, prog_name):
+        parser = super(Delete, self).get_parser(prog_name)
+        parser.add_argument(
+            'config_id',
+            metavar='<config_id>',
+            help=('Identifier for the config to delete the containers for'),
+        )
+        parser.add_argument(
+            '--managed-by',
+            metavar='<name>',
+            dest='managed_by',
+            default='paunch',
+            help=('Override the name of the tool managing the containers'),
+        )
+        return parser
+
     def take_action(self, parsed_args):
+        paunch.delete(parsed_args.config_id, parsed_args.managed_by)
         pass
 
 
@@ -114,13 +125,40 @@ class List(Command):
 
     log = logging.getLogger(__name__)
 
+    def get_parser(self, prog_name):
+        parser = super(List, self).get_parser(prog_name)
+        parser.add_argument(
+            '--managed-by',
+            metavar='<name>',
+            dest='managed_by',
+            default='paunch',
+            help=('Override the name of the tool managing the containers'),
+        )
+        return parser
+
     def take_action(self, parsed_args):
-        paunch.list()
+        paunch.list(parsed_args.managed_by)
 
 
 class Show(Command):
 
     log = logging.getLogger(__name__)
 
+    def get_parser(self, prog_name):
+        parser = super(Show, self).get_parser(prog_name)
+        parser.add_argument(
+            'config_id',
+            metavar='<config_id>',
+            help=('Identifier for the config to show the containers for'),
+        )
+        parser.add_argument(
+            '--managed-by',
+            metavar='<name>',
+            dest='managed_by',
+            default='paunch',
+            help=('Override the name of the tool managing the containers'),
+        )
+        return parser
+
     def take_action(self, parsed_args):
-        paunch.list()
+        paunch.show(parsed_args.config_id, parsed_args.managed_by)
