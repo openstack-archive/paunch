@@ -129,7 +129,8 @@ class TestComposeV1Builder(base.TestCase):
                 'user': 'bar',
                 'net': 'host',
                 'pid': 'container:bar',
-                'restart': 'always'
+                'restart': 'always',
+                'env_file': '/tmp/foo.env',
             }
         }
         builder = compose1.ComposeV1Builder('foo', config, None)
@@ -138,7 +139,8 @@ class TestComposeV1Builder(base.TestCase):
         builder.docker_run_args(cmd, 'one')
         self.assertEqual(
             ['docker', 'run', '--name', 'one',
-             '--detach=true', '--net=host', '--pid=container:bar',
+             '--detach=true', '--env-file=/tmp/foo.env',
+             '--net=host', '--pid=container:bar',
              '--privileged=true', '--restart=always', '--user=bar',
              'centos:7'],
             cmd
@@ -151,6 +153,7 @@ class TestComposeV1Builder(base.TestCase):
                 'detach': False,
                 'command': 'ls -l /foo',
                 'environment': ['FOO=BAR', 'BAR=BAZ'],
+                'env_file': ['/tmp/foo.env', '/tmp/bar.env'],
                 'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
                 'volumes_from': ['two', 'three']
             }
@@ -162,6 +165,7 @@ class TestComposeV1Builder(base.TestCase):
         self.assertEqual(
             ['docker', 'run', '--name', 'one',
              '--env=FOO=BAR', '--env=BAR=BAZ',
+             '--env-file=/tmp/foo.env', '--env-file=/tmp/bar.env',
              '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
              '--volumes_from=two', '--volumes_from=three',
              'centos:7', 'ls', '-l', '/foo'],

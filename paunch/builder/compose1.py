@@ -81,7 +81,13 @@ class ComposeV1Builder(object):
         for v in cconfig.get('environment', []):
             if v:
                 cmd.append('--env=%s' % v)
-        # TODO(sbaker) implement --env-file
+        if 'env_file' in cconfig:
+            env_file = cconfig['env_file']
+            if not isinstance(env_file, list):
+                env_file = [env_file]
+            for f in env_file:
+                if f:
+                    cmd.append('--env-file=%s' % f)
         if 'net' in cconfig:
             cmd.append('--net=%s' % cconfig['net'])
         if 'pid' in cconfig:
