@@ -19,7 +19,8 @@ from cliff.commandmanager import CommandManager
 import paunch
 
 
-"""Utility to launch and manage containers using the Kubernetes Pod format"""
+"""Utility to launch and manage containers using
+YAML based configuration data"""
 
 
 class PaunchApp(App):

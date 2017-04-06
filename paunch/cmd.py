@@ -50,7 +50,7 @@ class Apply(Command):
         parser.add_argument(
             'config_id',
             metavar='<config_id>',
-            help=('Identifier for the config, unique to the service managing '
+            help=('Identifier for the config, unique to the tool managing '
                   'the containers'),
         )
         return parser
