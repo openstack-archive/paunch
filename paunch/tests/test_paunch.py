@@ -60,10 +60,10 @@ class TestPaunch(base.TestCase):
         runner.return_value.rename_containers.assert_called_once_with()
 
     def test_list(self):
-        self.assertRaises(NotImplementedError, paunch.list)
+        self.assertRaises(NotImplementedError, paunch.list, 'tester')
 
     def test_show(self):
-        self.assertRaises(NotImplementedError, paunch.show, 'foo')
+        self.assertRaises(NotImplementedError, paunch.show, 'foo', 'tester')
 
     def test_delete(self):
-        self.assertRaises(NotImplementedError, paunch.delete, 'foo')
+        self.assertRaises(NotImplementedError, paunch.delete, 'foo', 'tester')

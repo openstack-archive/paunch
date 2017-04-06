@@ -41,13 +41,13 @@ def cleanup(config_ids, managed_by):
     r.rename_containers()
 
 
-def list():
+def list(managed_by):
     raise NotImplementedError()
 
 
-def show(config_id):
+def show(config_id, managed_by):
     raise NotImplementedError()
 
 
-def delete(config_id):
+def delete(config_id, managed_by):
     raise NotImplementedError()
