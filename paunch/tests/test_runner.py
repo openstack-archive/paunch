@@ -179,7 +179,7 @@ four-12345678 four
     @mock.patch('subprocess.Popen')
     def test_delete_missing_configs(self, popen):
         self.mock_execute(popen, 'one\ntwo\nthree\nfour', '', 0)
-        self.runner.remove_container = mock.Mock()
+        self.runner.remove_containers = mock.Mock()
 
         self.runner.delete_missing_configs(['two', 'three'])
         self.assert_execute(
@@ -189,6 +189,6 @@ four-12345678 four
         )
 
         # containers one and four will be deleted
-        self.runner.remove_container.assert_has_calls([
+        self.runner.remove_containers.assert_has_calls([
             mock.call('one'), mock.call('four')
         ], any_order=True)

@@ -160,4 +160,4 @@ class DockerRunner(object):
         for conf_id in self.current_config_ids():
             if conf_id not in config_ids:
                 LOG.debug('%s no longer exists, deleting containers' % conf_id)
-                self.remove_container(conf_id)
+                self.remove_containers(conf_id)
