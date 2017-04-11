@@ -25,6 +25,24 @@ LOG = logging.getLogger(__name__)
 
 
 def apply(config_id, config, managed_by, labels=None, docker_cmd=None):
+    """Execute supplied container configuration.
+
+    :param str config_id: Unique config ID, should not be re-used until any
+                          running containers with that config ID have been
+                          deleted.
+    :param dict config: Configuration data describing container actions to
+                        apply.
+    :param str managed_by: Name of the tool managing the containers. Only
+                           containers labelled with this will be modified.
+    :param dict labels: Optional keys/values of labels to apply to containers
+                        created with this invocation.
+    :param str docker_cmd: Optional override to the docker command to run.
+
+    :returns (list, list, int) lists of stdout and stderr for each execution,
+                               and a single return code representing the
+                               overall success of the apply.
+    :rtype: tuple
+    """
     r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
     builder = compose1.ComposeV1Builder(
         config_id=config_id,
@@ -36,6 +54,15 @@ def apply(config_id, config, managed_by, labels=None, docker_cmd=None):
 
 
 def cleanup(config_ids, managed_by, docker_cmd=None):
+    """Delete containers no longer applied, rename others to preferred name.
+
+    :param list config_ids: List of config IDs still applied. All containers
+                            managed by this tool will be deleted if their
+                            config ID is not specified in this list.
+    :param str managed_by: Name of the tool managing the containers. Only
+                           containers labelled with this will be modified.
+    :param str docker_cmd: Optional override to the docker command to run.
+    """
     r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
     r.delete_missing_configs(config_ids)
     r.rename_containers()
