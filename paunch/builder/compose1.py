@@ -78,9 +78,6 @@ class ComposeV1Builder(object):
         cconfig = self.config[container]
         if cconfig.get('detach', True):
             cmd.append('--detach=true')
-        for v in cconfig.get('environment', []):
-            if v:
-                cmd.append('--env=%s' % v)
         if 'env_file' in cconfig:
             env_file = cconfig['env_file']
             if not isinstance(env_file, list):
@@ -88,6 +85,9 @@ class ComposeV1Builder(object):
             for f in env_file:
                 if f:
                     cmd.append('--env-file=%s' % f)
+        for v in cconfig.get('environment', []):
+            if v:
+                cmd.append('--env=%s' % v)
         if 'net' in cconfig:
             cmd.append('--net=%s' % cconfig['net'])
         if 'pid' in cconfig:
