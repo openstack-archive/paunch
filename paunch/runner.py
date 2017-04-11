@@ -13,7 +13,6 @@
 
 import json
 import logging
-import os
 import random
 import string
 import subprocess
@@ -26,8 +25,7 @@ class DockerRunner(object):
 
     def __init__(self, managed_by, docker_cmd=None):
         self.managed_by = managed_by
-        self.docker_cmd = docker_cmd or os.environ.get(
-            'PAUNCH_DOCKER_CMD', 'docker')
+        self.docker_cmd = docker_cmd or 'docker'
 
     @staticmethod
     def execute(cmd):

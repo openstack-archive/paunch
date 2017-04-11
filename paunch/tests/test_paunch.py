@@ -24,7 +24,7 @@ class TestPaunch(base.TestCase):
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
     def test_apply(self, runner, builder):
         paunch.apply('foo', {'bar': 'baz'}, 'tester')
-        runner.assert_called_once_with('tester')
+        runner.assert_called_once_with('tester', docker_cmd=None)
         builder.assert_called_once_with(
             config_id='foo',
             config={'bar': 'baz'},
@@ -42,7 +42,7 @@ class TestPaunch(base.TestCase):
             managed_by='tester',
             labels={'bink': 'boop'})
 
-        runner.assert_called_once_with('tester')
+        runner.assert_called_once_with('tester', docker_cmd=None)
         builder.assert_called_once_with(
             config_id='foo',
             config={'bar': 'baz'},
@@ -54,7 +54,7 @@ class TestPaunch(base.TestCase):
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
     def test_cleanup(self, runner):
         paunch.cleanup(['foo', 'bar'], 'tester')
-        runner.assert_called_once_with('tester')
+        runner.assert_called_once_with('tester', docker_cmd=None)
         runner.return_value.delete_missing_configs.assert_called_once_with(
             ['foo', 'bar'])
         runner.return_value.rename_containers.assert_called_once_with()

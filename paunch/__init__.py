@@ -24,8 +24,8 @@ __version__ = pbr.version.VersionInfo('paunch').version_string()
 LOG = logging.getLogger(__name__)
 
 
-def apply(config_id, config, managed_by, labels=None):
-    r = runner.DockerRunner(managed_by)
+def apply(config_id, config, managed_by, labels=None, docker_cmd=None):
+    r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
     builder = compose1.ComposeV1Builder(
         config_id=config_id,
         config=config,
@@ -35,19 +35,19 @@ def apply(config_id, config, managed_by, labels=None):
     return builder.apply()
 
 
-def cleanup(config_ids, managed_by):
-    r = runner.DockerRunner(managed_by)
+def cleanup(config_ids, managed_by, docker_cmd=None):
+    r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
     r.delete_missing_configs(config_ids)
     r.rename_containers()
 
 
-def list(managed_by):
+def list(managed_by, docker_cmd=None):
     raise NotImplementedError()
 
 
-def show(config_id, managed_by):
+def show(config_id, managed_by, docker_cmd=None):
     raise NotImplementedError()
 
 
-def delete(config_id, managed_by):
+def delete(config_id, managed_by, docker_cmd=None):
     raise NotImplementedError()
