@@ -5,8 +5,9 @@ paunch
 Utility to launch and manage containers using YAML based configuration data
 
 * Free software: Apache license
+* Documentation: https://docs.openstack.org/developer/paunch
 * Source: http://git.openstack.org/cgit/openstack/paunch
-* Bugs: http://bugs.launchpad.net/tripleo
+* Bugs: http://bugs.launchpad.net/paunch
 
 Features
 --------
