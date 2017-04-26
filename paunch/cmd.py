@@ -47,6 +47,13 @@ class Apply(Command):
             default='paunch',
             help=('Override the name of the tool managing the containers'),
         )
+        parser.add_argument(
+            '--config-id',
+            metavar='<name>',
+            dest='config_id',
+            required=True,
+            help=('ID to assign to containers'),
+        )
         return parser
 
     def take_action(self, parsed_args):
