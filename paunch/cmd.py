@@ -83,7 +83,7 @@ class Cleanup(Command):
         parser.add_argument(
             'config_id',
             metavar='<config_id>',
-            dest='config_ids',
+            nargs='?',
             help=('Identifiers for the configs which still apply, all others '
                   'will be deleted.'),
         )
@@ -98,7 +98,7 @@ class Cleanup(Command):
 
     def take_action(self, parsed_args):
         paunch.cleanup(
-            parsed_args.config_ids,
+            parsed_args.config_id,
             managed_by=parsed_args.managed_by
         )
 
