@@ -103,7 +103,7 @@ class ComposeV1Builder(object):
                 cmd.append('--volume=%s' % v)
         for v in cconfig.get('volumes_from', []):
             if v:
-                cmd.append('--volumes_from=%s' % v)
+                cmd.append('--volumes-from=%s' % v)
 
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))

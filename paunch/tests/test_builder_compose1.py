@@ -167,7 +167,7 @@ class TestComposeV1Builder(base.TestCase):
              '--env-file=/tmp/foo.env', '--env-file=/tmp/bar.env',
              '--env=FOO=BAR', '--env=BAR=BAZ',
              '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
-             '--volumes_from=two', '--volumes_from=three',
+             '--volumes-from=two', '--volumes-from=three',
              'centos:7', 'ls', '-l', '/foo'],
             cmd
         )
