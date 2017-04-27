@@ -22,8 +22,8 @@ Features
   by paunch will be modified by paunch. Unique container names are assigned if
   the desired name is taken, and containers are renamed when the desired name
   becomes available.
-* Accessable via the `paunch` command line utility, or by importing python
-  package `paunch`.
+* Accessable via the ``paunch`` command line utility, or by importing python
+  package ``paunch``.
 
 Configuration Format
 --------------------
@@ -34,4 +34,92 @@ modifications. The intention is for the format to evolve to faithfully
 implement existing formats such as the
 `Kubernetes Pod format <https://kubernetes.io/docs/concepts/workloads/pods/pod/>`_.
 
+Running Paunch Commands
+-----------------------
 
+The only state that paunch is aware of is the labels that it sets on running
+containers, so it is up to the user to keep track of what paunch configs
+*should* be running so that others can be deleted on cleanup. For these
+examples we're going to store that state in a simple text file:
+
+::
+
+    $ touch paunch-state.txt
+
+We'll start of by deleting any containers that were started by previous calls
+to ``paunch apply``:
+
+::
+
+    $ paunch --verbose cleanup $(cat paunch-state.txt)
+
+Next we'll apply a simple hello-world config found in
+``examples/hello-world.yml`` which contains the following:
+
+::
+
+    hello:
+      image: hello-world
+      detach: false
+
+Applied by running:
+
+::
+
+    $ paunch --verbose apply --file examples/hello-world.yml --config-id hi
+    $ echo hi >> paunch-state.txt
+
+A container called ``hello`` will be created, print a Hello World message, then
+exit. You can confirm that it still exists by running ``docker ps -a``.
+
+Now lets try running the exact same ``paunch apply`` command:
+
+::
+
+    $ paunch --verbose apply --file examples/hello-world.yml --config-id hi
+
+This will fail with an error because there already exists a container labeled
+with ``"config_id": "hi"``. **WARNING TODO NOT IMPLEMENTED YET**
+
+Lets try again with a unique --config-id:
+
+::
+
+    $ paunch --verbose apply --file examples/hello-world.yml --config-id hi-again
+    $ echo hi-again >> paunch-state.txt
+
+Doing a ``docker ps -a`` now will show that there are now 2 containers, one
+called ``hello`` and the other called ``hello-(random suffix)``. Lets delete the
+one associated with the ``hi`` config-id:
+
+::
+
+    $ cat paunch-state.txt
+    $ echo hi-again > paunch-state.txt
+    $ cat paunch-state.txt
+    $ paunch --verbose cleanup $(cat paunch-state.txt)
+
+Doing a ``docker ps -a`` will show that the original ``hello`` container has been
+deleted and ``hello-(random suffix)`` has been renamed to ``hello``
+
+Generally ``paunch cleanup`` will be run first to delete containers for configs
+that are no longer apply. Then a series of ``paunch apply`` commands can be run.
+If these ``apply`` calls are part of a live upgrade where a mixture of old and
+new containers are left running, the upgrade can be completed in the next run
+to ``paunch cleanup`` with the updated list of config-id state.
+
+Paunch can also be used as a library by other tools. By default running the
+``paunch`` command won't affect these other containers due to the different ``managed_by``
+label being set on those containers. For example if you wanted to run paunch
+commands masquerading as the
+`heat-agents <http://git.openstack.org/cgit/openstack/heat-agents/tree/>`_
+`docker-cmd hook <http://git.openstack.org/cgit/openstack/heat-agents/tree/heat-config-docker-cmd>`_
+then you can run:
+
+::
+
+  paunch --verbose apply --file examples/hello-world.yml --config-id hi --managed-by docker-cmd
+
+This will result in a ``hello`` container being run, which will be deleted the
+next time the ``docker-cmd`` hook does its own ``cleanup`` run since it won't
+be aware of a ``config_id`` called ``hi``.
