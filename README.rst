@@ -25,15 +25,6 @@ Features
 * Accessable via the ``paunch`` command line utility, or by importing python
   package ``paunch``.
 
-Configuration Format
---------------------
-
-The current format is loosely based on a subset of the `docker-compose v1
-format <https://docs.docker.com/compose/compose-file/compose-file-v1/>`_ with
-modifications. The intention is for the format to evolve to faithfully
-implement existing formats such as the
-`Kubernetes Pod format <https://kubernetes.io/docs/concepts/workloads/pods/pod/>`_.
-
 Running Paunch Commands
 -----------------------
 
@@ -123,3 +114,67 @@ then you can run:
 This will result in a ``hello`` container being run, which will be deleted the
 next time the ``docker-cmd`` hook does its own ``cleanup`` run since it won't
 be aware of a ``config_id`` called ``hi``.
+
+Configuration Format
+--------------------
+
+The current format is loosely based on a subset of the `docker-compose v1
+format <https://docs.docker.com/compose/compose-file/compose-file-v1/>`_ with
+modifications. The intention is for the format to evolve to faithfully
+implement existing formats such as the
+`Kubernetes Pod format <https://kubernetes.io/docs/concepts/workloads/pods/pod/>`_.
+
+The top-level of the YAML format is a dict where the keys (generally)
+correspond to the name of the container to be created.  The following config
+creates 2 containers called ``hello1`` and ``hello2``:
+
+::
+
+    hello1:
+      image: hello-world
+    hello2:
+      image: hello-world
+
+The values are a dict which specifies the arguments that are used when the
+container is launched. Supported keys which comply with the docker-compose v1
+format are as follows:
+
+command:
+  String or list. Overrides the default command.
+
+detach:
+  Boolean, defaults to true. If true the container is run in the background. If
+  false then paunch will block until the container has exited.
+
+environment:
+  List of the format ['KEY1=value1', 'KEY2=value2']. Sets environment variables
+  that are available to the process launched in the container.
+
+env_file:
+  List of file paths containing line delimited environment variables.
+
+image:
+  String, mandatory. Specify the image to start the container from. Can either
+  be a repository/tag or a partial image ID.
+
+net:
+  String. Set the network mode for the container.
+
+pid:
+  String. Set the PID mode for the container.
+
+privileged:
+  Boolean, defaults to false. If true, give extended privileges to this container.
+
+restart:
+  String. Restart policy to apply when a container exits.
+
+user:
+  String. Sets the username or UID used and optionally the groupname or GID for
+  the specified command.
+
+volumes:
+  List of strings. Specify the bind mount for this container.
+
+volumes_from:
+  List of strings. Mount volumes from the specified container(s).
