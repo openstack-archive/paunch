@@ -1,0 +1,4 @@
+hello:
+  image: hello-world
+  detach: false
+
