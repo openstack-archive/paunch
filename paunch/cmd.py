@@ -83,7 +83,7 @@ class Cleanup(Command):
         parser.add_argument(
             'config_id',
             metavar='<config_id>',
-            nargs='?',
+            nargs='*',
             help=('Identifiers for the configs which still apply, all others '
                   'will be deleted.'),
         )

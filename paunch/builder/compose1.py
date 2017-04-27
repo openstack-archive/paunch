@@ -58,7 +58,7 @@ class ComposeV1Builder(object):
                 LOG.error("Error running %s. [%s]\n" % (cmd, returncode))
                 deploy_status_code = returncode
             else:
-                LOG.debug('Completed %s' % cmd)
+                LOG.debug('Completed $ %s' % ' '.join(cmd))
         return stdout, stderr, deploy_status_code
 
     def label_arguments(self, cmd, container):

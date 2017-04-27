@@ -29,7 +29,7 @@ class DockerRunner(object):
 
     @staticmethod
     def execute(cmd):
-        LOG.debug(' '.join(cmd))
+        LOG.debug('$ %s' % ' '.join(cmd))
         subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         cmd_stdout, cmd_stderr = subproc.communicate()
@@ -157,6 +157,9 @@ class DockerRunner(object):
         return container
 
     def delete_missing_configs(self, config_ids):
+        if not config_ids:
+            config_ids = []
+
         for conf_id in self.current_config_ids():
             if conf_id not in config_ids:
                 LOG.debug('%s no longer exists, deleting containers' % conf_id)
