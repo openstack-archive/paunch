@@ -12,6 +12,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import collections
 import mock
 
 from paunch.builder import compose1
@@ -106,10 +107,10 @@ class TestComposeV1Builder(base.TestCase):
              '--label', 'managed_by=tester'],
             cmd)
 
-        labels = {
-            'foo': 'bar',
-            'bar': 'baz'
-        }
+        labels = collections.OrderedDict()
+        labels['foo'] = 'bar'
+        labels['bar'] = 'baz'
+
         builder = compose1.ComposeV1Builder('foo', {}, r, labels=labels)
         cmd = []
         builder.label_arguments(cmd, 'one')
