@@ -14,13 +14,14 @@
 import collections
 import logging
 
-from cliff.command import Command
+from cliff import command
+from cliff import lister
 import yaml
 
 import paunch
 
 
-class Apply(Command):
+class Apply(command.Command):
 
     log = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ class Apply(Command):
         )
 
 
-class Cleanup(Command):
+class Cleanup(command.Command):
 
     log = logging.getLogger(__name__)
 
@@ -103,7 +104,7 @@ class Cleanup(Command):
         )
 
 
-class Delete(Command):
+class Delete(command.Command):
 
     log = logging.getLogger(__name__)
 
@@ -128,7 +129,7 @@ class Delete(Command):
         paunch.delete(parsed_args.config_id, parsed_args.managed_by)
 
 
-class List(Command):
+class List(lister.Lister):
 
     log = logging.getLogger(__name__)
 
@@ -144,10 +145,26 @@ class List(Command):
         return parser
 
     def take_action(self, parsed_args):
-        paunch.list(parsed_args.managed_by)
+        configs = paunch.list(parsed_args.managed_by)
+        columns = [
+            'config',
+            'container',
+            'image',
+            'command',
+            'status',
+        ]
+        data = []
+        for k, v in configs.items():
+            for i in v:
+                name = i.get('Name', '/')[1:]  # strip the leading slash
+                cmd = ' '.join(i.get('Config', {}).get('Cmd', []))
+                image = i.get('Config', {}).get('Image')
+                status = i.get('State', {}).get('Status')
+                data.append((k, name, image, cmd, status))
+        return columns, data
 
 
-class Show(Command):
+class Show(command.Command):
 
     log = logging.getLogger(__name__)
 

@@ -59,6 +59,20 @@ class TestDockerRunner(base.TestCase):
         )
 
     @mock.patch('subprocess.Popen')
+    def test_containers_in_config(self, popen):
+        self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
+        self.runner.remove_container = mock.Mock()
+
+        result = self.runner.containers_in_config('foo')
+
+        self.assert_execute(
+            popen, ['docker', 'ps', '-q', '-a',
+                    '--filter', 'label=managed_by=tester',
+                    '--filter', 'label=config_id=foo']
+        )
+        self.assertEqual(['one', 'two', 'three'], result)
+
+    @mock.patch('subprocess.Popen')
     def test_remove_containers(self, popen):
         self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
         self.runner.remove_container = mock.Mock()
@@ -192,3 +206,32 @@ four-12345678 four
         self.runner.remove_containers.assert_has_calls([
             mock.call('one'), mock.call('four')
         ], any_order=True)
+
+    @mock.patch('subprocess.Popen')
+    def test_list_configs(self, popen):
+        self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
+        self.runner.inspect = mock.Mock(
+            return_value={'e': 'f'})
+        self.runner.containers_in_config = mock.Mock(
+            return_value=['a', 'b', 'c'])
+
+        result = self.runner.list_configs()
+
+        self.assert_execute(
+            popen, ['docker', 'ps', '-a', '--filter',
+                    'label=managed_by=tester',
+                    '--format', '{{.Label "config_id"}}']
+        )
+        self.runner.containers_in_config.assert_has_calls([
+            mock.call('one'), mock.call('two'), mock.call('three')
+        ], any_order=True)
+        self.runner.inspect.assert_has_calls([
+            mock.call('a'), mock.call('b'), mock.call('c'),
+            mock.call('a'), mock.call('b'), mock.call('c'),
+            mock.call('a'), mock.call('b'), mock.call('c')
+        ])
+        self.assertEqual({
+            'one': [{'e': 'f'}, {'e': 'f'}, {'e': 'f'}],
+            'two': [{'e': 'f'}, {'e': 'f'}, {'e': 'f'}],
+            'three': [{'e': 'f'}, {'e': 'f'}, {'e': 'f'}]
+        }, result)

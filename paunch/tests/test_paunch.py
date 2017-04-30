@@ -59,8 +59,11 @@ class TestPaunch(base.TestCase):
             ['foo', 'bar'])
         runner.return_value.rename_containers.assert_called_once_with()
 
-    def test_list(self):
-        self.assertRaises(NotImplementedError, paunch.list, 'tester')
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_list(self, runner):
+        paunch.list('tester')
+        runner.assert_called_once_with('tester', docker_cmd=None)
+        runner.return_value.list_configs.assert_called_once_with()
 
     def test_show(self):
         self.assertRaises(NotImplementedError, paunch.show, 'foo', 'tester')

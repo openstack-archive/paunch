@@ -11,6 +11,7 @@
 #   under the License.
 #
 
+import collections
 import json
 import logging
 import random
@@ -49,16 +50,21 @@ class DockerRunner(object):
             return set()
         return set(cmd_stdout.split())
 
-    def remove_containers(self, conf_id):
+    def containers_in_config(self, conf_id):
         cmd = [
             self.docker_cmd, 'ps', '-q', '-a',
             '--filter', 'label=managed_by=%s' % self.managed_by,
             '--filter', 'label=config_id=%s' % conf_id
         ]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
-        if returncode == 0:
-            for container in cmd_stdout.split():
-                self.remove_container(container)
+        if returncode != 0:
+            return []
+
+        return [c for c in cmd_stdout.split()]
+
+    def remove_containers(self, conf_id):
+        for container in self.containers_in_config(conf_id):
+            self.remove_container(container)
 
     def remove_container(self, container):
         cmd = [self.docker_cmd, 'rm', '-f', container]
@@ -164,3 +170,10 @@ class DockerRunner(object):
             if conf_id not in config_ids:
                 LOG.debug('%s no longer exists, deleting containers' % conf_id)
                 self.remove_containers(conf_id)
+
+    def list_configs(self):
+        configs = collections.defaultdict(list)
+        for conf_id in self.current_config_ids():
+            for container in self.containers_in_config(conf_id):
+                configs[conf_id].append(self.inspect(container))
+        return configs

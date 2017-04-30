@@ -69,7 +69,14 @@ def cleanup(config_ids, managed_by, docker_cmd=None):
 
 
 def list(managed_by, docker_cmd=None):
-    raise NotImplementedError()
+    """List all containers associated with all config IDs.
+
+    :returns a dict where the key is the config ID and the value is a list of
+             'docker inspect' dicts for each container.
+    :rtype: defaultdict(list)
+    """
+    r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
+    return r.list_configs()
 
 
 def show(config_id, managed_by, docker_cmd=None):
