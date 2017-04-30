@@ -79,10 +79,6 @@ def list(managed_by, docker_cmd=None):
     return r.list_configs()
 
 
-def show(config_id, managed_by, docker_cmd=None):
-    raise NotImplementedError()
-
-
 def delete(config_ids, managed_by, docker_cmd=None):
     """Delete containers with the specified config IDs.
 

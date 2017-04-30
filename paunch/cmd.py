@@ -162,27 +162,3 @@ class List(lister.Lister):
                 status = i.get('State', {}).get('Status')
                 data.append((k, name, image, cmd, status))
         return columns, data
-
-
-class Show(command.Command):
-
-    log = logging.getLogger(__name__)
-
-    def get_parser(self, prog_name):
-        parser = super(Show, self).get_parser(prog_name)
-        parser.add_argument(
-            'config_id',
-            metavar='<config_id>',
-            help=('Identifier for the config to show the containers for'),
-        )
-        parser.add_argument(
-            '--managed-by',
-            metavar='<name>',
-            dest='managed_by',
-            default='paunch',
-            help=('Override the name of the tool managing the containers'),
-        )
-        return parser
-
-    def take_action(self, parsed_args):
-        paunch.show(parsed_args.config_id, parsed_args.managed_by)

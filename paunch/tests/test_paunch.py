@@ -65,9 +65,6 @@ class TestPaunch(base.TestCase):
         runner.assert_called_once_with('tester', docker_cmd=None)
         runner.return_value.list_configs.assert_called_once_with()
 
-    def test_show(self):
-        self.assertRaises(NotImplementedError, paunch.show, 'foo', 'tester')
-
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
     def test_delete(self, runner):
         paunch.delete(['foo', 'bar'], 'tester')
