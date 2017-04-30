@@ -111,6 +111,7 @@ class Delete(Command):
         parser = super(Delete, self).get_parser(prog_name)
         parser.add_argument(
             'config_id',
+            nargs='*',
             metavar='<config_id>',
             help=('Identifier for the config to delete the containers for'),
         )
@@ -125,7 +126,6 @@ class Delete(Command):
 
     def take_action(self, parsed_args):
         paunch.delete(parsed_args.config_id, parsed_args.managed_by)
-        pass
 
 
 class List(Command):

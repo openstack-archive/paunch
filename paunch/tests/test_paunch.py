@@ -65,5 +65,10 @@ class TestPaunch(base.TestCase):
     def test_show(self):
         self.assertRaises(NotImplementedError, paunch.show, 'foo', 'tester')
 
-    def test_delete(self):
-        self.assertRaises(NotImplementedError, paunch.delete, 'foo', 'tester')
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_delete(self, runner):
+        paunch.delete(['foo', 'bar'], 'tester')
+        runner.assert_called_once_with('tester', docker_cmd=None)
+        runner.return_value.remove_containers.assert_has_calls([
+            mock.call('foo'), mock.call('bar')
+        ])

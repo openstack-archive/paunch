@@ -76,5 +76,17 @@ def show(config_id, managed_by, docker_cmd=None):
     raise NotImplementedError()
 
 
-def delete(config_id, managed_by, docker_cmd=None):
-    raise NotImplementedError()
+def delete(config_ids, managed_by, docker_cmd=None):
+    """Delete containers with the specified config IDs.
+
+    :param list config_ids: List of config IDs to delete the containers for.
+    :param str managed_by: Name of the tool managing the containers. Only
+                           containers labelled with this will be modified.
+    :param str docker_cmd: Optional override to the docker command to run.
+    """
+    if not config_ids:
+        LOG.warn('No config IDs specified')
+
+    r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
+    for conf_id in config_ids:
+        r.remove_containers(conf_id)
