@@ -108,7 +108,9 @@ class DockerRunner(object):
                 LOG.info('Cannot rename "%s" since "%s" still exists' % (
                     current, desired))
             else:
+                LOG.info('Renaming "%s" to "%s"' % (current, desired))
                 self.rename_container(current, desired)
+                current_containers.append(desired)
 
     def rename_container(self, container, name):
         cmd = [self.docker_cmd, 'rename', container, name]
