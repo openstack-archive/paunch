@@ -13,6 +13,7 @@
 # under the License.
 
 import collections
+import json
 import mock
 
 from paunch.builder import compose1
@@ -66,6 +67,7 @@ class TestComposeV1Builder(base.TestCase):
                  '--label', 'config_id=foo',
                  '--label', 'container_name=one',
                  '--label', 'managed_by=tester',
+                 '--label', 'config_data=%s' % json.dumps(config['one']),
                  '--detach=true', 'centos:7']
             ),
             mock.call(
@@ -73,6 +75,7 @@ class TestComposeV1Builder(base.TestCase):
                  '--label', 'config_id=foo',
                  '--label', 'container_name=two',
                  '--label', 'managed_by=tester',
+                 '--label', 'config_data=%s' % json.dumps(config['two']),
                  '--detach=true', 'centos:7']
             ),
             mock.call(
@@ -80,6 +83,7 @@ class TestComposeV1Builder(base.TestCase):
                  '--label', 'config_id=foo',
                  '--label', 'container_name=three',
                  '--label', 'managed_by=tester',
+                 '--label', 'config_data=%s' % json.dumps(config['three']),
                  '--detach=true', 'centos:7']
             ),
             mock.call(
@@ -87,6 +91,7 @@ class TestComposeV1Builder(base.TestCase):
                  '--label', 'config_id=foo',
                  '--label', 'container_name=four',
                  '--label', 'managed_by=tester',
+                 '--label', 'config_data=%s' % json.dumps(config['four']),
                  '--detach=true', 'centos:7']
             ),
             mock.call(
@@ -104,7 +109,8 @@ class TestComposeV1Builder(base.TestCase):
         self.assertEqual(
             ['--label', 'config_id=foo',
              '--label', 'container_name=one',
-             '--label', 'managed_by=tester'],
+             '--label', 'managed_by=tester',
+             '--label', 'config_data=null'],
             cmd)
 
         labels = collections.OrderedDict()
@@ -119,7 +125,8 @@ class TestComposeV1Builder(base.TestCase):
              '--label', 'bar=baz',
              '--label', 'config_id=foo',
              '--label', 'container_name=one',
-             '--label', 'managed_by=tester'],
+             '--label', 'managed_by=tester',
+             '--label', 'config_data=null'],
             cmd)
 
     def test_docker_run_args(self):

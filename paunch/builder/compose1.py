@@ -11,6 +11,7 @@
 #   under the License.
 #
 
+import json
 import logging
 
 LOG = logging.getLogger(__name__)
@@ -71,7 +72,9 @@ class ComposeV1Builder(object):
             '--label',
             'container_name=%s' % container,
             '--label',
-            'managed_by=%s' % self.runner.managed_by
+            'managed_by=%s' % self.runner.managed_by,
+            '--label',
+            'config_data=%s' % json.dumps(self.config.get(container))
         ])
 
     def docker_run_args(self, cmd, container):
