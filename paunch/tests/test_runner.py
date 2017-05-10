@@ -98,6 +98,53 @@ class TestDockerRunner(base.TestCase):
         )
 
     @mock.patch('subprocess.Popen')
+    def test_container_names(self, popen):
+        ps_result = '''one one
+two-12345678 two
+two two
+three-12345678 three
+four-12345678 four
+'''
+
+        self.mock_execute(popen, ps_result, '', 0)
+
+        names = list(self.runner.container_names())
+
+        self.assert_execute(
+            popen, ['docker', 'ps', '-a',
+                    '--filter', 'label=managed_by=tester',
+                    '--format', '{{.Names}} {{.Label "container_name"}}']
+        )
+        self.assertEqual([
+            ['one', 'one'],
+            ['two-12345678', 'two'],
+            ['two', 'two'],
+            ['three-12345678', 'three'],
+            ['four-12345678', 'four']
+        ], names)
+
+    @mock.patch('subprocess.Popen')
+    def test_container_names_by_conf_id(self, popen):
+        ps_result = '''one one
+two-12345678 two
+'''
+
+        self.mock_execute(popen, ps_result, '', 0)
+
+        names = list(self.runner.container_names('abc'))
+
+        self.assert_execute(
+            popen, ['docker', 'ps', '-a',
+                    '--filter', 'label=managed_by=tester',
+                    '--filter', 'label=config_id=abc',
+                    '--format', '{{.Names}} {{.Label "container_name"}}']
+        )
+        self.assertEqual([
+            ['one', 'one'],
+            ['two-12345678', 'two']
+        ], names)
+
+    @mock.patch('subprocess.Popen')
     def test_rename_containers(self, popen):
         ps_result = '''one one
 two-12345678 two

@@ -73,24 +73,30 @@ class DockerRunner(object):
             LOG.error('Error removing container: %s' % container)
             LOG.error(cmd_stderr)
 
-    def rename_containers(self):
+    def container_names(self, conf_id=None):
         # list every container name, and its container_name label
         cmd = [
             self.docker_cmd, 'ps', '-a',
-            '--filter', 'label=managed_by=%s' % self.managed_by,
-            '--format', '{{.Names}} {{.Label "container_name"}}'
+            '--filter', 'label=managed_by=%s' % self.managed_by
         ]
+        if conf_id:
+            cmd.extend((
+                '--filter', 'label=config_id=%s' % conf_id
+            ))
+        cmd.extend((
+            '--format', '{{.Names}} {{.Label "container_name"}}'
+        ))
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
         if returncode != 0:
             return
+        for line in cmd_stdout.split("\n"):
+            if line:
+                yield line.split()
 
-        lines = cmd_stdout.split("\n")
+    def rename_containers(self):
         current_containers = []
         need_renaming = {}
-        for line in lines:
-            entry = line.split()
-            if not entry:
-                continue
+        for entry in self.container_names():
             current_containers.append(entry[0])
 
             # ignore if container_name label not set
