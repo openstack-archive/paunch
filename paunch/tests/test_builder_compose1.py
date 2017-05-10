@@ -17,13 +17,13 @@ import json
 import mock
 
 from paunch.builder import compose1
+from paunch import runner
 from paunch.tests import base
 
 
 class TestComposeV1Builder(base.TestCase):
 
-    @mock.patch('paunch.runner.DockerRunner', autospec=True)
-    def test_apply(self, runner):
+    def test_apply(self):
         config = {
             'one': {
                 'start_order': 0,
@@ -48,20 +48,56 @@ class TestComposeV1Builder(base.TestCase):
             }
         }
 
-        r = runner.return_value
-        r.managed_by = 'tester'
+        r = runner.DockerRunner(managed_by='tester', docker_cmd='docker')
+        exe = mock.Mock()
+        exe.side_effect = [
+            ('', '', 0),  # ps for delete_missing_and_updated container_names
+            ('', '', 0),  # ps for after delete_missing_and_updated renames
+            ('', '', 0),  # ps to only create containers which don't exist
+            ('Created one-12345678', '', 0),
+            ('Created two-12345678', '', 0),
+            ('Created three-12345678', '', 0),
+            ('Created four-12345678', '', 0),
+            ('a\nb\nc', '', 0)
+        ]
         r.discover_container_name = lambda n, c: '%s-12345678' % n
         r.unique_container_name = lambda n: '%s-12345678' % n
-        r.docker_cmd = 'docker'
-        r.execute.return_value = ('Done!', '', 0)
+        r.execute = exe
 
         builder = compose1.ComposeV1Builder('foo', config, r)
         stdout, stderr, deploy_status_code = builder.apply()
         self.assertEqual(0, deploy_status_code)
-        self.assertEqual(['Done!', 'Done!', 'Done!', 'Done!', 'Done!'], stdout)
+        self.assertEqual([
+            'Created one-12345678',
+            'Created two-12345678',
+            'Created three-12345678',
+            'Created four-12345678',
+            'a\nb\nc'
+        ], stdout)
         self.assertEqual([], stderr)
 
-        r.execute.assert_has_calls([
+        exe.assert_has_calls([
+            # ps for delete_missing_and_updated container_names
+            mock.call(
+                ['docker', 'ps', '-a',
+                 '--filter', 'label=managed_by=tester',
+                 '--filter', 'label=config_id=foo',
+                 '--format', '{{.Names}} {{.Label "container_name"}}']
+            ),
+            # ps for after delete_missing_and_updated renames
+            mock.call(
+                ['docker', 'ps', '-a',
+                 '--filter', 'label=managed_by=tester',
+                 '--format', '{{.Names}} {{.Label "container_name"}}']
+            ),
+            # ps to only create containers which don't exist
+            mock.call(
+                ['docker', 'ps', '-a',
+                 '--filter', 'label=managed_by=tester',
+                 '--filter', 'label=config_id=foo',
+                 '--format', '{{.Names}} {{.Label "container_name"}}']
+            ),
+            # run one
             mock.call(
                 ['docker', 'run', '--name', 'one-12345678',
                  '--label', 'config_id=foo',
@@ -70,6 +106,7 @@ class TestComposeV1Builder(base.TestCase):
                  '--label', 'config_data=%s' % json.dumps(config['one']),
                  '--detach=true', 'centos:7']
             ),
+            # run two
             mock.call(
                 ['docker', 'run', '--name', 'two-12345678',
                  '--label', 'config_id=foo',
@@ -78,6 +115,7 @@ class TestComposeV1Builder(base.TestCase):
                  '--label', 'config_data=%s' % json.dumps(config['two']),
                  '--detach=true', 'centos:7']
             ),
+            # run three
             mock.call(
                 ['docker', 'run', '--name', 'three-12345678',
                  '--label', 'config_id=foo',
@@ -86,6 +124,7 @@ class TestComposeV1Builder(base.TestCase):
                  '--label', 'config_data=%s' % json.dumps(config['three']),
                  '--detach=true', 'centos:7']
             ),
+            # run four
             mock.call(
                 ['docker', 'run', '--name', 'four-12345678',
                  '--label', 'config_id=foo',
@@ -94,6 +133,145 @@ class TestComposeV1Builder(base.TestCase):
                  '--label', 'config_data=%s' % json.dumps(config['four']),
                  '--detach=true', 'centos:7']
             ),
+            # execute within four
+            mock.call(
+                ['docker', 'exec', 'four-12345678', 'ls', '-l', '/']
+            ),
+        ])
+
+    def test_apply_idempotency(self):
+        config = {
+            # not running yet
+            'one': {
+                'start_order': 0,
+                'image': 'centos:7',
+            },
+            # running, but with a different config
+            'two': {
+                'start_order': 1,
+                'image': 'centos:7',
+            },
+            # running with the same config
+            'three': {
+                'start_order': 2,
+                'image': 'centos:7',
+            },
+            # not running yet
+            'four': {
+                'start_order': 10,
+                'image': 'centos:7',
+            },
+            'four_ls': {
+                'action': 'exec',
+                'start_order': 20,
+                'command': ['four', 'ls', '-l', '/']
+            }
+        }
+
+        r = runner.DockerRunner(managed_by='tester', docker_cmd='docker')
+        exe = mock.Mock()
+        exe.side_effect = [
+            # ps for delete_missing_and_updated container_names
+            ('''five five
+six six
+two-12345678 two
+three-12345678 three''', '', 0),
+            # rm five
+            ('', '', 0),
+            # rm six
+            ('', '', 0),
+            # inspect two
+            ('{"start_order": 1, "image": "centos:6"}', '', 0),
+            # rm two, changed config data
+            ('', '', 0),
+            # inspect three
+            ('{"start_order": 2, "image": "centos:7"}', '', 0),
+            # ps for after delete_missing_and_updated renames
+            ('', '', 0),
+            # ps to only create containers which don't exist
+            ('three-12345678 three', '', 0),
+            ('Created one-12345678', '', 0),
+            ('Created two-12345678', '', 0),
+            ('Created four-12345678', '', 0),
+            ('a\nb\nc', '', 0)
+        ]
+        r.discover_container_name = lambda n, c: '%s-12345678' % n
+        r.unique_container_name = lambda n: '%s-12345678' % n
+        r.execute = exe
+
+        builder = compose1.ComposeV1Builder('foo', config, r)
+        stdout, stderr, deploy_status_code = builder.apply()
+        self.assertEqual(0, deploy_status_code)
+        self.assertEqual([
+            'Created one-12345678',
+            'Created two-12345678',
+            'Created four-12345678',
+            'a\nb\nc'
+        ], stdout)
+        self.assertEqual([], stderr)
+
+        exe.assert_has_calls([
+            # ps for delete_missing_and_updated container_names
+            mock.call(
+                ['docker', 'ps', '-a',
+                 '--filter', 'label=managed_by=tester',
+                 '--filter', 'label=config_id=foo',
+                 '--format', '{{.Names}} {{.Label "container_name"}}']
+            ),
+            # rm containers not in config
+            mock.call(['docker', 'rm', '-f', 'five']),
+            mock.call(['docker', 'rm', '-f', 'six']),
+            # rm two, changed config
+            mock.call(['docker', 'inspect', '--format',
+                       '{{index .Config.Labels "config_data"}}',
+                       'two-12345678']),
+            mock.call(['docker', 'rm', '-f', 'two-12345678']),
+            # check three, config hasn't changed
+            mock.call(['docker', 'inspect', '--format',
+                       '{{index .Config.Labels "config_data"}}',
+                       'three-12345678']),
+            # ps for after delete_missing_and_updated renames
+            mock.call(
+                ['docker', 'ps', '-a',
+                 '--filter', 'label=managed_by=tester',
+                 '--format', '{{.Names}} {{.Label "container_name"}}']
+            ),
+            # ps to only create containers which don't exist
+            mock.call(
+                ['docker', 'ps', '-a',
+                 '--filter', 'label=managed_by=tester',
+                 '--filter', 'label=config_id=foo',
+                 '--format', '{{.Names}} {{.Label "container_name"}}']
+            ),
+            # run one
+            mock.call(
+                ['docker', 'run', '--name', 'one-12345678',
+                 '--label', 'config_id=foo',
+                 '--label', 'container_name=one',
+                 '--label', 'managed_by=tester',
+                 '--label', 'config_data=%s' % json.dumps(config['one']),
+                 '--detach=true', 'centos:7']
+            ),
+            # run two
+            mock.call(
+                ['docker', 'run', '--name', 'two-12345678',
+                 '--label', 'config_id=foo',
+                 '--label', 'container_name=two',
+                 '--label', 'managed_by=tester',
+                 '--label', 'config_data=%s' % json.dumps(config['two']),
+                 '--detach=true', 'centos:7']
+            ),
+            # don't run three, its already running
+            # run four
+            mock.call(
+                ['docker', 'run', '--name', 'four-12345678',
+                 '--label', 'config_id=foo',
+                 '--label', 'container_name=four',
+                 '--label', 'managed_by=tester',
+                 '--label', 'config_data=%s' % json.dumps(config['four']),
+                 '--detach=true', 'centos:7']
+            ),
+            # execute within four
             mock.call(
                 ['docker', 'exec', 'four-12345678', 'ls', '-l', '/']
             ),

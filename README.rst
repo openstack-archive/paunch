@@ -69,8 +69,8 @@ Now lets try running the exact same ``paunch apply`` command:
 
     $ paunch --verbose apply --file examples/hello-world.yml --config-id hi
 
-This will fail with an error because there already exists a container labeled
-with ``"config_id": "hi"``. **WARNING TODO NOT IMPLEMENTED YET**
+This will not make any changes at all due to the idempotency behaviour of
+paunch.
 
 Lets try again with a unique --config-id:
 
@@ -115,6 +115,38 @@ This will result in a ``hello`` container being run, which will be deleted the
 next time the ``docker-cmd`` hook does its own ``cleanup`` run since it won't
 be aware of a ``config_id`` called ``hi``.
 
+Idempotency Behaviour
+---------------------
+
+In many cases the user will want to use the same --config-id with changed
+config data.  The aim of the idempotency behaviour is to leave containers
+running when their config has not changed, but replace containers which have
+modified config.
+
+When ``paunch apply`` is run with the same ``--config-id`` but modified config
+data, the following logic is applied:
+
+* For each existing container with a matching config_id and managed_by:
+  * delete containers which no longer exist in config
+  * delete containers with missing config_data label
+  * delete containers where config_data label differs from current config
+* Do a full rename to desired names since deletes have occured
+* Only create containers from config if there is no container running with that name
+* ``exec`` actions will be run regardless, so commands they run may require
+  their own idempotency behaviour
+
+Only configuration data is used to determine whether something has changed to
+trigger replacing the container during ``apply``. This means that changing the
+contents of a file referred to in ``env_file`` will *not* trigger replacement
+unless something else changes in the configuration data (such as the path
+specified in ``env_file``).
+
+The most common reason to restart containers is to have them running with an
+updated image. As such it is recommended that stable image tags such as
+``latest`` are not used when specifying the ``image``, and that changing the
+release version tag in the configuration data is the recommended way of
+propagating image changes to the running containers.
+
 Configuration Format
 --------------------
 
@@ -155,7 +187,7 @@ env_file:
 
 image:
   String, mandatory. Specify the image to start the container from. Can either
-  be a repository/tag or a partial image ID.
+  be a repositorys/tag or a partial image ID.
 
 net:
   String. Set the network mode for the container.

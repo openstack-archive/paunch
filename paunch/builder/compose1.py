@@ -27,16 +27,26 @@ class ComposeV1Builder(object):
 
     def apply(self):
 
+        self.delete_missing_and_updated()
+
         stdout = []
         stderr = []
         deploy_status_code = 0
         key_fltr = lambda k: self.config[k].get('start_order', 0)
+
+        container_names = self.runner.container_names(self.config_id)
+        desired_names = set([cn[-1] for cn in container_names])
+
         for container in sorted(self.config, key=key_fltr):
             LOG.debug("Running container: %s" % container)
             action = self.config[container].get('action', 'run')
             exit_codes = self.config[container].get('exit_codes', [0])
 
             if action == 'run':
+                if container in desired_names:
+                    LOG.debug('Skipping existing container: %s' % container)
+                    continue
+
                 cmd = [
                     self.runner.docker_cmd,
                     'run',
@@ -61,6 +71,40 @@ class ComposeV1Builder(object):
             else:
                 LOG.debug('Completed $ %s' % ' '.join(cmd))
         return stdout, stderr, deploy_status_code
+
+    def delete_missing_and_updated(self):
+        container_names = self.runner.container_names(self.config_id)
+        for cn in container_names:
+            container = cn[0]
+
+            # if the desired name is not in the config, delete it
+            if cn[-1] not in self.config:
+                LOG.debug("Deleting container (removed): %s" % container)
+                self.runner.remove_container(container)
+                continue
+
+            ex_data_str = self.runner.inspect(
+                container, '{{index .Config.Labels "config_data"}}')
+            if not ex_data_str:
+                LOG.debug("Deleting container (no config_data): %s"
+                          % container)
+                self.runner.remove_container(container)
+                continue
+
+            try:
+                ex_data = json.loads(ex_data_str)
+            except Exception:
+                ex_data = None
+
+            new_data = self.config.get(cn[-1])
+            if new_data != ex_data:
+                LOG.debug("Deleting container (changed config_data): %s"
+                          % container)
+                self.runner.remove_container(container)
+
+        # deleting containers is an opportunity for renames to their
+        # preferred name
+        self.runner.rename_containers()
 
     def label_arguments(self, cmd, container):
         if self.labels:
