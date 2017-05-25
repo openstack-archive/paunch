@@ -137,6 +137,8 @@ class ComposeV1Builder(object):
                 cmd.append('--env=%s' % v)
         if 'net' in cconfig:
             cmd.append('--net=%s' % cconfig['net'])
+        if 'ipc' in cconfig:
+            cmd.append('--ipc=%s' % cconfig['ipc'])
         if 'pid' in cconfig:
             cmd.append('--pid=%s' % cconfig['pid'])
         if 'privileged' in cconfig:
