@@ -1,6 +1,6 @@
-===============================
+======
 paunch
-===============================
+======
 
 Utility to launch and manage containers using YAML based configuration data
 
