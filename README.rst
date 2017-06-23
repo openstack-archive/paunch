@@ -24,6 +24,8 @@ Features
   becomes available.
 * Accessable via the ``paunch`` command line utility, or by importing python
   package ``paunch``.
+* Builtin ``debug`` command lets you see how individual containers are run,
+  get configuration information for them, and run them any way you need to.
 
 Running Paunch Commands
 -----------------------
@@ -147,6 +149,72 @@ updated image. As such it is recommended that stable image tags such as
 release version tag in the configuration data is the recommended way of
 propagating image changes to the running containers.
 
+Debugging with Paunch
+---------------------
+
+The ``paunch debug`` command allows you to perform specific actions on a given
+container.  This can be used to:
+
+* Run a container with a specific configuration.
+* Dump the configuration of a given container in either json or yaml.
+* Output the docker command line used to start the container.
+* Run a container with any configuration additions you wish such that you can
+  run it with a shell as any user etc.
+
+The configuration options you will likely be interested in here include:
+
+::
+
+  --file <file>         YAML or JSON file containing configuration data
+  --action <name>       Action can be one of: "dump-json", "dump-yaml",
+                        "print-cmd", or "run"
+  --container <name>    Name of the container you wish to manipulate
+  --interactive         Run container in interactive mode - modifies config
+                        and execution of container
+  --shell               Similar to interactive but drops you into a shell
+  --user <name>         Start container as the specified user
+  --overrides <name>    JSON configuration information used to override
+                        default config values
+
+``file`` is the name of the configuration file to use
+containing the configuration for the container you wish to use.
+
+Here is an example of using ``paunch debug`` to start a root shell inside the
+test container:
+
+::
+
+  # paunch debug --file examples/hello-world.yml --interactive --shell --user root --container hello --action run
+
+This will drop you an interactive session inside the hello world container
+starting /bin/bash running as root.
+
+To see how this container is started normally:
+
+::
+
+  # paunch debug --file examples/hello-world.yml --container hello --action print-cmd
+
+You can also dump the configuration of this to a file so you can edit
+it and rerun it with different a different configuration.  This is more
+useful when there are multiple configurations in a single file:
+
+::
+
+  # paunch debug --file examples/hello-world.yml --container hello --action dump-json > hello.json
+
+You can then use ``hello.json`` as your ``--file`` argument after
+editing it to your liking.
+
+You can also add any configuration elements you wish on the command line
+to test paunch or debug containers etc.  In this example I'm running
+the hello container with ``net=host``.
+
+::
+
+  # paunch debug --file examples/hello-world.yml --overrides '{"net": "host"}' --container hello --action run
+
+
 Configuration Format
 --------------------
 
@@ -200,6 +268,15 @@ privileged:
 
 restart:
   String. Restart policy to apply when a container exits.
+
+remove:
+  Boolean: Remove container after running.
+
+interactive:
+  Boolean: Run container in interactive mode.
+
+tty:
+  Boolean: Allocate a tty to interact with the container.
 
 user:
   String. Sets the username or UID used and optionally the groupname or GID for

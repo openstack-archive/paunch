@@ -135,6 +135,12 @@ class ComposeV1Builder(object):
         for v in cconfig.get('environment', []):
             if v:
                 cmd.append('--env=%s' % v)
+        if cconfig.get('remove', False):
+            cmd.append('--rm')
+        if cconfig.get('interactive', False):
+            cmd.append('--interactive')
+        if cconfig.get('tty', False):
+            cmd.append('--tty')
         if 'net' in cconfig:
             cmd.append('--net=%s' % cconfig['net'])
         if 'ipc' in cconfig:

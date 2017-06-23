@@ -72,3 +72,16 @@ class TestPaunch(base.TestCase):
         runner.return_value.remove_containers.assert_has_calls([
             mock.call('foo'), mock.call('bar')
         ])
+
+    @mock.patch('paunch.builder.compose1.ComposeV1Builder', autospec=True)
+    @mock.patch('paunch.runner.DockerRunner')
+    def test_debug(self, runner, builder):
+        paunch.debug('foo', 'testcont', 'run', {'bar': 'baz'}, 'tester',
+                     docker_cmd='docker')
+        builder.assert_called_once_with(
+            config_id='foo',
+            config={'bar': 'baz'},
+            runner=runner.return_value,
+            labels=None
+        )
+        runner.assert_called_once_with('tester', docker_cmd='docker')

@@ -40,6 +40,11 @@ class DockerRunner(object):
                 cmd_stderr.decode('utf-8'),
                 subproc.returncode)
 
+    @staticmethod
+    def execute_interactive(cmd):
+        LOG.debug('$ %s' % ' '.join(cmd))
+        return subprocess.call(cmd)
+
     def current_config_ids(self):
         # List all config_id labels for managed containers
         cmd = [

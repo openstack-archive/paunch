@@ -12,9 +12,10 @@
 
 '''Stable library interface to managing containers with paunch.'''
 
+import json
 import logging
-
 import pbr.version
+import yaml
 
 from paunch.builder import compose1
 from paunch import runner
@@ -77,6 +78,63 @@ def list(managed_by, docker_cmd=None):
     """
     r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
     return r.list_configs()
+
+
+def debug(config_id, container_name, action, config, managed_by, labels=None,
+          docker_cmd=None):
+    """Execute supplied container configuration.
+
+    :param str config_id: Unique config ID, should not be re-used until any
+                          running containers with that config ID have been
+                          deleted.
+    :param str container_name: Name of the container in the config you
+                               wish to manipulate.
+    :param str action: Action to take.
+    :param dict config: Configuration data describing container actions to
+                        apply.
+    :param str managed_by: Name of the tool managing the containers. Only
+                           containers labeled with this will be modified.
+    :param dict labels: Optional keys/values of labels to apply to containers
+                        created with this invocation.
+    :param str docker_cmd: Optional override to the docker command to run.
+
+    :returns integer return value from running command or failure for any
+             other reason.
+    :rtype: int
+    """
+
+    r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
+    builder = compose1.ComposeV1Builder(
+        config_id=config_id,
+        config=config,
+        runner=r,
+        labels=labels
+    )
+    if action == 'print-cmd':
+        cmd = [
+            r.docker_cmd,
+            'run',
+            '--name',
+            r.unique_container_name(container_name)
+        ]
+        builder.docker_run_args(cmd, container_name)
+        print(' '.join(cmd))
+    elif action == 'run':
+        cmd = [
+            r.docker_cmd,
+            'run',
+            '--name',
+            r.unique_container_name(container_name)
+        ]
+        builder.docker_run_args(cmd, container_name)
+        return r.execute_interactive(cmd)
+    elif action == 'dump-yaml':
+        print(yaml.safe_dump(config, default_flow_style=False))
+    elif action == 'dump-json':
+        print(json.dumps(config, indent=4))
+    else:
+        raise ValueError('action should be one of: "dump-json", "dump-yaml"',
+                         '"print-cmd", or "run"')
 
 
 def delete(config_ids, managed_by, docker_cmd=None):
