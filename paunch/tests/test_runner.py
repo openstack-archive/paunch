@@ -28,7 +28,8 @@ class TestDockerRunner(base.TestCase):
     def mock_execute(self, popen, stdout, stderr, returncode):
         subproc = mock.Mock()
         subproc.returncode = returncode
-        subproc.communicate.return_value = (stdout, stderr)
+        subproc.communicate.return_value = (stdout.encode('utf-8'),
+                                            stderr.encode('utf-8'))
         popen.return_value = subproc
 
     def assert_execute(self, popen, cmd):

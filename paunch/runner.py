@@ -36,7 +36,9 @@ class DockerRunner(object):
         cmd_stdout, cmd_stderr = subproc.communicate()
         LOG.debug(cmd_stdout)
         LOG.debug(cmd_stderr)
-        return cmd_stdout, cmd_stderr, subproc.returncode
+        return (cmd_stdout.decode('utf-8'),
+                cmd_stderr.decode('utf-8'),
+                subproc.returncode)
 
     def current_config_ids(self):
         # List all config_id labels for managed containers
