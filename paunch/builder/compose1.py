@@ -141,6 +141,16 @@ class ComposeV1Builder(object):
             cmd.append('--ipc=%s' % cconfig['ipc'])
         if 'pid' in cconfig:
             cmd.append('--pid=%s' % cconfig['pid'])
+        if 'healthcheck' in cconfig:
+            hconfig = cconfig['healthcheck']
+            if 'test' in hconfig:
+                cmd.append('--health-cmd=%s' % hconfig['test'])
+            if 'interval' in hconfig:
+                cmd.append('--health-interval=%s' % hconfig['interval'])
+            if 'timeout' in hconfig:
+                cmd.append('--health-timeout=%s' % hconfig['timeout'])
+            if 'retries' in hconfig:
+                cmd.append('--health-retries=%s' % hconfig['retries'])
         if 'privileged' in cconfig:
             cmd.append('--privileged=%s' % str(cconfig['privileged']).lower())
         if 'restart' in cconfig:

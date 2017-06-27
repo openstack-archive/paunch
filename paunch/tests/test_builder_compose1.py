@@ -317,6 +317,12 @@ three-12345678 three''', '', 0),
                 'ipc': 'host',
                 'pid': 'container:bar',
                 'restart': 'always',
+                'healthcheck': {
+                    'test': '/bin/true',
+                    'interval': '30s',
+                    'timeout': '10s',
+                    'retries': 3
+                },
                 'env_file': '/tmp/foo.env',
             }
         }
@@ -328,6 +334,8 @@ three-12345678 three''', '', 0),
             ['docker', 'run', '--name', 'one',
              '--detach=true', '--env-file=/tmp/foo.env',
              '--net=host', '--ipc=host', '--pid=container:bar',
+             '--health-cmd=/bin/true', '--health-interval=30s',
+             '--health-timeout=10s', '--health-retries=3',
              '--privileged=true', '--restart=always', '--user=bar',
              'centos:7'],
             cmd
