@@ -67,9 +67,13 @@ class ComposeV1Builder(object):
 
             if returncode not in exit_codes:
                 LOG.error("Error running %s. [%s]\n" % (cmd, returncode))
+                LOG.error("stdout: %s" % cmd_stdout)
+                LOG.error("stderr: %s" % cmd_stderr)
                 deploy_status_code = returncode
             else:
                 LOG.debug('Completed $ %s' % ' '.join(cmd))
+                LOG.info("stdout: %s" % cmd_stdout)
+                LOG.info("stderr: %s" % cmd_stderr)
         return stdout, stderr, deploy_status_code
 
     def delete_missing_and_updated(self):
