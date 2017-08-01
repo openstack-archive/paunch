@@ -68,12 +68,14 @@ class Apply(command.Command):
         with open(parsed_args.file, 'r') as f:
             config = yaml.safe_load(f)
 
-        paunch.apply(
+        stdout, stderr, rc = paunch.apply(
             parsed_args.config_id,
             config,
             managed_by='paunch',
             labels=labels
         )
+
+        return rc
 
 
 class Cleanup(command.Command):
