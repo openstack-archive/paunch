@@ -287,3 +287,6 @@ volumes:
 
 volumes_from:
   List of strings. Mount volumes from the specified container(s).
+
+log_tag:
+  String. Set the log tag for the specified container.

@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    the log_tag option was added to the container definition. This will make
+    paunch add the --log-opt tag=<value> option to the run command.

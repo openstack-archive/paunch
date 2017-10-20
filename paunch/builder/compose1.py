@@ -173,6 +173,8 @@ class ComposeV1Builder(object):
         for v in cconfig.get('volumes_from', []):
             if v:
                 cmd.append('--volumes-from=%s' % v)
+        if 'log_tag' in cconfig:
+            cmd.append('--log-opt=tag=%s' % cconfig['log_tag'])
 
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))
