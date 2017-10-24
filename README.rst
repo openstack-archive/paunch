@@ -263,6 +263,9 @@ net:
 pid:
   String. Set the PID mode for the container.
 
+uts:
+  String. Set the UTS namespace for the container.
+
 privileged:
   Boolean, defaults to false. If true, give extended privileges to this container.
 

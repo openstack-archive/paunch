@@ -151,6 +151,8 @@ class ComposeV1Builder(object):
             cmd.append('--ipc=%s' % cconfig['ipc'])
         if 'pid' in cconfig:
             cmd.append('--pid=%s' % cconfig['pid'])
+        if 'uts' in cconfig:
+            cmd.append('--uts=%s' % cconfig['uts'])
         if 'healthcheck' in cconfig:
             hconfig = cconfig['healthcheck']
             if 'test' in hconfig:
