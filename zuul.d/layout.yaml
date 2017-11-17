@@ -1,0 +1,9 @@
+---
+
+- project:
+    name: openstack/paunch
+    templates:
+      - tripleo-multinode-container-minimal
+    check:
+      jobs:
+        - tripleo-ci-centos-7-ovb-containers-oooq
