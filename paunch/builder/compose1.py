@@ -27,10 +27,14 @@ class ComposeV1Builder(object):
 
     def apply(self):
 
-        self.delete_missing_and_updated()
-
         stdout = []
         stderr = []
+        pull_returncode = self.pull_missing_images(stdout, stderr)
+        if pull_returncode != 0:
+            return stdout, stderr, pull_returncode
+
+        self.delete_missing_and_updated()
+
         deploy_status_code = 0
         key_fltr = lambda k: self.config[k].get('start_order', 0)
 
@@ -190,6 +194,40 @@ class ComposeV1Builder(object):
             command[0] = self.runner.discover_container_name(
                 command[0], self.config_id)
         cmd.extend(command)
+
+    def pull_missing_images(self, stdout, stderr):
+        images = set()
+        for container in self.config:
+            cconfig = self.config[container]
+            image = cconfig.get('image')
+            if image:
+                images.add(image)
+
+        returncode = 0
+
+        for image in sorted(images):
+
+            # only pull if the image does not exist locally
+            if self.runner.inspect(image, format='exists', type='image'):
+                continue
+
+            cmd = [self.runner.docker_cmd, 'pull', image]
+            (cmd_stdout, cmd_stderr, rc) = self.runner.execute(cmd)
+            if cmd_stdout:
+                stdout.append(cmd_stdout)
+            if cmd_stderr:
+                stderr.append(cmd_stderr)
+
+            if rc != 0:
+                returncode = rc
+                LOG.error("Error running %s. [%s]\n" % (cmd, returncode))
+                LOG.error("stdout: %s" % cmd_stdout)
+                LOG.error("stderr: %s" % cmd_stderr)
+            else:
+                LOG.debug('Completed $ %s' % ' '.join(cmd))
+                LOG.info("stdout: %s" % cmd_stdout)
+                LOG.info("stderr: %s" % cmd_stderr)
+        return returncode
 
     @staticmethod
     def command_argument(command):

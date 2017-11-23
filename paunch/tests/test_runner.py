@@ -179,7 +179,7 @@ four-12345678 four
             self.runner.inspect('one')
         )
         self.assert_execute(
-            popen, ['docker', 'inspect', 'one']
+            popen, ['docker', 'inspect', '--type', 'container', 'one']
         )
 
     @mock.patch('subprocess.Popen')
@@ -191,7 +191,8 @@ four-12345678 four
             self.runner.inspect('one', format='{{foo}}')
         )
         self.assert_execute(
-            popen, ['docker', 'inspect', '--format', '{{foo}}', 'one']
+            popen, ['docker', 'inspect', '--type', 'container',
+                    '--format', '{{foo}}', 'one']
         )
 
     def test_unique_container_name(self):
