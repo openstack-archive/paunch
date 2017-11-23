@@ -6,4 +6,7 @@
       - tripleo-multinode-container-minimal
     check:
       jobs:
-        - tripleo-ci-centos-7-ovb-containers-oooq
+        - tripleo-ci-centos-7-ovb-containers-oooq:
+            branches: ^stable/pike.*$
+        - tripleo-ci-centos-7-ovb-ha-oooq:
+            branches: ^(?!stable/pike).*$
