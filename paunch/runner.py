@@ -132,12 +132,12 @@ class DockerRunner(object):
             LOG.error('Error renaming container: %s' % container)
             LOG.error(cmd_stderr)
 
-    def inspect(self, container, format=None):
-        cmd = [self.docker_cmd, 'inspect']
+    def inspect(self, name, format=None, type='container'):
+        cmd = [self.docker_cmd, 'inspect', '--type', type]
         if format:
             cmd.append('--format')
             cmd.append(format)
-        cmd.append(container)
+        cmd.append(name)
         (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd)
         if returncode != 0:
             return
