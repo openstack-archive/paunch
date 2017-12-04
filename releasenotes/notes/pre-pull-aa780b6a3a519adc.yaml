@@ -1,0 +1,6 @@
+---
+features:
+- All referenced images are now pulled as the first step of applying a
+  config. Any pull failures will result in failing with an error before any of
+  the config is applied. This is especially helpful for detached containers,
+  where pull failures will not be captured during the apply.

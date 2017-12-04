@@ -35,7 +35,7 @@ class TestComposeV1Builder(base.TestCase):
             },
             'three': {
                 'start_order': 2,
-                'image': 'centos:7',
+                'image': 'centos:6',
             },
             'four': {
                 'start_order': 10,
@@ -51,6 +51,9 @@ class TestComposeV1Builder(base.TestCase):
         r = runner.DockerRunner(managed_by='tester', docker_cmd='docker')
         exe = mock.Mock()
         exe.side_effect = [
+            ('exists', '', 0),  # inspect for image centos:6
+            ('', '', 1),  # inspect for missing image centos:7
+            ('Pulled centos:7', '', 0),  # pull centos:6
             ('', '', 0),  # ps for delete_missing_and_updated container_names
             ('', '', 0),  # ps for after delete_missing_and_updated renames
             ('', '', 0),  # ps to only create containers which don't exist
@@ -68,6 +71,7 @@ class TestComposeV1Builder(base.TestCase):
         stdout, stderr, deploy_status_code = builder.apply()
         self.assertEqual(0, deploy_status_code)
         self.assertEqual([
+            'Pulled centos:7',
             'Created one-12345678',
             'Created two-12345678',
             'Created three-12345678',
@@ -77,6 +81,19 @@ class TestComposeV1Builder(base.TestCase):
         self.assertEqual([], stderr)
 
         exe.assert_has_calls([
+            # inspect existing image centos:6
+            mock.call(
+                ['docker', 'inspect', '--type', 'image',
+                 '--format', 'exists', 'centos:6']
+            ),
+            # inspect and pull missing image centos:7
+            mock.call(
+                ['docker', 'inspect', '--type', 'image',
+                 '--format', 'exists', 'centos:7']
+            ),
+            mock.call(
+                ['docker', 'pull', 'centos:7']
+            ),
             # ps for delete_missing_and_updated container_names
             mock.call(
                 ['docker', 'ps', '-a',
@@ -122,7 +139,7 @@ class TestComposeV1Builder(base.TestCase):
                  '--label', 'container_name=three',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['three']),
-                 '--detach=true', 'centos:7']
+                 '--detach=true', 'centos:6']
             ),
             # run four
             mock.call(
@@ -171,6 +188,8 @@ class TestComposeV1Builder(base.TestCase):
         r = runner.DockerRunner(managed_by='tester', docker_cmd='docker')
         exe = mock.Mock()
         exe.side_effect = [
+            # inspect for image centos:7
+            ('exists', '', 0),
             # ps for delete_missing_and_updated container_names
             ('''five five
 six six
@@ -211,6 +230,11 @@ three-12345678 three''', '', 0),
         self.assertEqual([], stderr)
 
         exe.assert_has_calls([
+            # inspect image centos:7
+            mock.call(
+                ['docker', 'inspect', '--type', 'image',
+                 '--format', 'exists', 'centos:7']
+            ),
             # ps for delete_missing_and_updated container_names
             mock.call(
                 ['docker', 'ps', '-a',
@@ -222,13 +246,13 @@ three-12345678 three''', '', 0),
             mock.call(['docker', 'rm', '-f', 'five']),
             mock.call(['docker', 'rm', '-f', 'six']),
             # rm two, changed config
-            mock.call(['docker', 'inspect', '--format',
-                       '{{index .Config.Labels "config_data"}}',
+            mock.call(['docker', 'inspect', '--type', 'container',
+                       '--format', '{{index .Config.Labels "config_data"}}',
                        'two-12345678']),
             mock.call(['docker', 'rm', '-f', 'two-12345678']),
             # check three, config hasn't changed
-            mock.call(['docker', 'inspect', '--format',
-                       '{{index .Config.Labels "config_data"}}',
+            mock.call(['docker', 'inspect', '--type', 'container',
+                       '--format', '{{index .Config.Labels "config_data"}}',
                        'three-12345678']),
             # ps for after delete_missing_and_updated renames
             mock.call(
@@ -274,6 +298,62 @@ three-12345678 three''', '', 0),
             # execute within four
             mock.call(
                 ['docker', 'exec', 'four-12345678', 'ls', '-l', '/']
+            ),
+        ])
+
+    def test_apply_failed_pull(self):
+        config = {
+            'one': {
+                'start_order': 0,
+                'image': 'centos:7',
+            },
+            'two': {
+                'start_order': 1,
+                'image': 'centos:7',
+            },
+            'three': {
+                'start_order': 2,
+                'image': 'centos:6',
+            },
+            'four': {
+                'start_order': 10,
+                'image': 'centos:7',
+            },
+            'four_ls': {
+                'action': 'exec',
+                'start_order': 20,
+                'command': ['four', 'ls', '-l', '/']
+            }
+        }
+
+        r = runner.DockerRunner(managed_by='tester', docker_cmd='docker')
+        exe = mock.Mock()
+        exe.side_effect = [
+            ('exists', '', 0),  # inspect for image centos:6
+            ('', '', 1),  # inspect for missing image centos:7
+            ('Pulling centos:7', 'ouch', 1),  # pull centos:7 failure
+        ]
+        r.execute = exe
+
+        builder = compose1.ComposeV1Builder('foo', config, r)
+        stdout, stderr, deploy_status_code = builder.apply()
+        self.assertEqual(1, deploy_status_code)
+        self.assertEqual(['Pulling centos:7'], stdout)
+        self.assertEqual(['ouch'], stderr)
+
+        exe.assert_has_calls([
+            # inspect existing image centos:6
+            mock.call(
+                ['docker', 'inspect', '--type', 'image',
+                 '--format', 'exists', 'centos:6']
+            ),
+            # inspect and pull missing image centos:7
+            mock.call(
+                ['docker', 'inspect', '--type', 'image',
+                 '--format', 'exists', 'centos:7']
+            ),
+            mock.call(
+                ['docker', 'pull', 'centos:7']
             ),
         ])
 
