@@ -1,6 +1,4 @@
----
 
 - project:
-    name: openstack/paunch
     templates:
       - tripleo-multinode-container-minimal
