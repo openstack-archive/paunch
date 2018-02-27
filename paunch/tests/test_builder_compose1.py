@@ -23,7 +23,9 @@ from paunch.tests import base
 
 class TestComposeV1Builder(base.TestCase):
 
-    def test_apply(self):
+    @mock.patch('tenacity.wait.wait_random_exponential.__call__')
+    def test_apply(self, mock_wait):
+        mock_wait.return_value = 0
         config = {
             'one': {
                 'start_order': 0,
@@ -53,7 +55,8 @@ class TestComposeV1Builder(base.TestCase):
         exe.side_effect = [
             ('exists', '', 0),  # inspect for image centos:6
             ('', '', 1),  # inspect for missing image centos:7
-            ('Pulled centos:7', '', 0),  # pull centos:6
+            ('Pulled centos:7', 'ouch', 1),  # pull centos:6 fails
+            ('Pulled centos:7', '', 0),  # pull centos:6 succeeds
             ('', '', 0),  # ps for delete_missing_and_updated container_names
             ('', '', 0),  # ps for after delete_missing_and_updated renames
             ('', '', 0),  # ps to only create containers which don't exist
@@ -91,6 +94,11 @@ class TestComposeV1Builder(base.TestCase):
                 ['docker', 'inspect', '--type', 'image',
                  '--format', 'exists', 'centos:7']
             ),
+            # first pull attempt fails
+            mock.call(
+                ['docker', 'pull', 'centos:7']
+            ),
+            # second pull attempt succeeds
             mock.call(
                 ['docker', 'pull', 'centos:7']
             ),
@@ -301,7 +309,9 @@ three-12345678 three''', '', 0),
             ),
         ])
 
-    def test_apply_failed_pull(self):
+    @mock.patch('tenacity.wait.wait_random_exponential.__call__')
+    def test_apply_failed_pull(self, mock_wait):
+        mock_wait.return_value = 0
         config = {
             'one': {
                 'start_order': 0,
@@ -332,6 +342,9 @@ three-12345678 three''', '', 0),
             ('exists', '', 0),  # inspect for image centos:6
             ('', '', 1),  # inspect for missing image centos:7
             ('Pulling centos:7', 'ouch', 1),  # pull centos:7 failure
+            ('Pulling centos:7', 'ouch', 1),  # pull centos:7 retry 2
+            ('Pulling centos:7', 'ouch', 1),  # pull centos:7 retry 3
+            ('Pulling centos:7', 'ouch', 1),  # pull centos:7 retry 4
         ]
         r.execute = exe
 
