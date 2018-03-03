@@ -7,4 +7,5 @@
 
    unreleased
    queens
+   queens
    pike
