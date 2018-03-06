@@ -13,6 +13,7 @@
 
 import json
 import logging
+import tenacity
 
 LOG = logging.getLogger(__name__)
 
@@ -215,23 +216,38 @@ class ComposeV1Builder(object):
             if self.runner.inspect(image, format='exists', type='image'):
                 continue
 
-            cmd = [self.runner.docker_cmd, 'pull', image]
-            (cmd_stdout, cmd_stderr, rc) = self.runner.execute(cmd)
+            try:
+                (cmd_stdout, cmd_stderr) = self._pull(image)
+            except PullException as e:
+                returncode = e.rc
+                cmd_stdout = e.stdout
+                cmd_stderr = e.stderr
+                LOG.error("Error pulling %s. [%s]\n" % (image, returncode))
+                LOG.error("stdout: %s" % e.stdout)
+                LOG.error("stderr: %s" % e.stderr)
+            else:
+                LOG.debug('Pulled %s' % image)
+                LOG.info("stdout: %s" % cmd_stdout)
+                LOG.info("stderr: %s" % cmd_stderr)
+
             if cmd_stdout:
                 stdout.append(cmd_stdout)
             if cmd_stderr:
                 stderr.append(cmd_stderr)
 
-            if rc != 0:
-                returncode = rc
-                LOG.error("Error running %s. [%s]\n" % (cmd, returncode))
-                LOG.error("stdout: %s" % cmd_stdout)
-                LOG.error("stderr: %s" % cmd_stderr)
-            else:
-                LOG.debug('Completed $ %s' % ' '.join(cmd))
-                LOG.info("stdout: %s" % cmd_stdout)
-                LOG.info("stderr: %s" % cmd_stderr)
         return returncode
+
+    @tenacity.retry(  # Retry up to 4 times with jittered exponential backoff
+        reraise=True,
+        wait=tenacity.wait_random_exponential(multiplier=1, max=10),
+        stop=tenacity.stop_after_attempt(4)
+    )
+    def _pull(self, image):
+        cmd = [self.runner.docker_cmd, 'pull', image]
+        (stdout, stderr, rc) = self.runner.execute(cmd)
+        if rc != 0:
+            raise PullException(stdout, stderr, rc)
+        return stdout, stderr
 
     @staticmethod
     def command_argument(command):
@@ -240,3 +256,11 @@ class ComposeV1Builder(object):
         if not isinstance(command, list):
             return command.split()
         return command
+
+
+class PullException(Exception):
+
+    def __init__(self, stdout, stderr, rc):
+        self.stdout = stdout
+        self.stderr = stderr
+        self.rc = rc
