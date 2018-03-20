@@ -186,6 +186,8 @@ class ComposeV1Builder(object):
                 cmd.append('--volumes-from=%s' % v)
         if 'log_tag' in cconfig:
             cmd.append('--log-opt=tag=%s' % cconfig['log_tag'])
+        if 'security_opt' in cconfig:
+            cmd.append('--security-opt=%s' % cconfig['security_opt'])
 
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))

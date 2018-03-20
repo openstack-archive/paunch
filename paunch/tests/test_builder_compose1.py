@@ -430,7 +430,8 @@ three-12345678 three''', '', 0),
                     'retries': 3
                 },
                 'env_file': '/tmp/foo.env',
-                'log_tag': '{{.ImageName}}/{{.Name}}/{{.ID}}'
+                'log_tag': '{{.ImageName}}/{{.Name}}/{{.ID}}',
+                'security_opt': 'label:disable'
             }
         }
         builder = compose1.ComposeV1Builder('foo', config, None)
@@ -444,7 +445,8 @@ three-12345678 three''', '', 0),
              '--uts=host', '--health-cmd="ls /mydir"', '--health-interval=30s',
              '--health-timeout=10s', '--health-retries=3',
              '--privileged=true', '--restart=always', '--user=bar',
-             '--log-opt=tag={{.ImageName}}/{{.Name}}/{{.ID}}', 'centos:7'],
+             '--log-opt=tag={{.ImageName}}/{{.Name}}/{{.ID}}',
+             '--security-opt=label:disable', 'centos:7'],
             cmd
         )
 
