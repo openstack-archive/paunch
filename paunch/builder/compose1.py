@@ -188,6 +188,8 @@ class ComposeV1Builder(object):
                 cmd.append('--volumes-from=%s' % v)
         if 'log_tag' in cconfig:
             cmd.append('--log-opt=tag=%s' % cconfig['log_tag'])
+        if 'cpu_shares' in cconfig:
+            cmd.append('--cpu-shares=%s' % cconfig['cpu_shares'])
         if 'security_opt' in cconfig:
             cmd.append('--security-opt=%s' % cconfig['security_opt'])
         if 'cpuset_cpus' in cconfig:
