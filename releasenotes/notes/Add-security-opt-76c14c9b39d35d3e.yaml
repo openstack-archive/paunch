@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    Add `--security-opt=xxx` option for the action run a container. Allows to
+    define security options, such as turning labels (SELinux) on/off.
