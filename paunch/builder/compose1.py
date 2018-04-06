@@ -158,6 +158,9 @@ class ComposeV1Builder(object):
             cmd.append('--pid=%s' % cconfig['pid'])
         if 'uts' in cconfig:
             cmd.append('--uts=%s' % cconfig['uts'])
+        for u in cconfig.get('ulimit', []):
+            if u:
+                cmd.append('--ulimit=%s' % u)
         if 'healthcheck' in cconfig:
             hconfig = cconfig['healthcheck']
             if 'test' in hconfig:
