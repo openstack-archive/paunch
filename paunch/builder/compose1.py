@@ -130,34 +130,50 @@ class ComposeV1Builder(object):
             'config_data=%s' % json.dumps(self.config.get(container))
         ])
 
+    def boolean_arg(self, cconfig, cmd, key, arg):
+        if cconfig.get(key, False):
+            cmd.append(arg)
+
+    def string_arg(self, cconfig, cmd, key, arg):
+        if key in cconfig:
+            cmd.append('%s=%s' % (arg, cconfig[key]))
+
+    def list_or_string_arg(self, cconfig, cmd, key, arg):
+        if key not in cconfig:
+            return
+        value = cconfig[key]
+        if not isinstance(value, list):
+            value = [value]
+        for v in value:
+            if v:
+                cmd.append('%s=%s' % (arg, v))
+
+    def list_arg(self, cconfig, cmd, key, arg):
+        if key not in cconfig:
+            return
+        value = cconfig[key]
+        for v in value:
+            if v:
+                cmd.append('%s=%s' % (arg, v))
+
     def docker_run_args(self, cmd, container):
         cconfig = self.config[container]
         if cconfig.get('detach', True):
             cmd.append('--detach=true')
-        if 'env_file' in cconfig:
-            env_file = cconfig['env_file']
-            if not isinstance(env_file, list):
-                env_file = [env_file]
-            for f in env_file:
-                if f:
-                    cmd.append('--env-file=%s' % f)
+        self.list_or_string_arg(cconfig, cmd, 'env_file', '--env-file')
+        # TODO(sbaker): support the dict layout for this property
         for v in cconfig.get('environment', []):
             if v:
                 cmd.append('--env=%s' % v)
-        if cconfig.get('remove', False):
-            cmd.append('--rm')
-        if cconfig.get('interactive', False):
-            cmd.append('--interactive')
-        if cconfig.get('tty', False):
-            cmd.append('--tty')
-        if 'net' in cconfig:
-            cmd.append('--net=%s' % cconfig['net'])
-        if 'ipc' in cconfig:
-            cmd.append('--ipc=%s' % cconfig['ipc'])
-        if 'pid' in cconfig:
-            cmd.append('--pid=%s' % cconfig['pid'])
-        if 'uts' in cconfig:
-            cmd.append('--uts=%s' % cconfig['uts'])
+        self.boolean_arg(cconfig, cmd, 'remove', '--rm')
+        self.boolean_arg(cconfig, cmd, 'interactive', '--interactive')
+        self.boolean_arg(cconfig, cmd, 'tty', '--tty')
+        self.string_arg(cconfig, cmd, 'net', '--net')
+        self.string_arg(cconfig, cmd, 'ipc', '--ipc')
+        self.string_arg(cconfig, cmd, 'pid', '--pid')
+        self.string_arg(cconfig, cmd, 'uts', '--uts')
+        # TODO(sbaker): implement ulimits property, deprecate this ulimit
+        # property
         for u in cconfig.get('ulimit', []):
             if u:
                 cmd.append('--ulimit=%s' % u)
@@ -173,22 +189,39 @@ class ComposeV1Builder(object):
                 cmd.append('--health-retries=%s' % hconfig['retries'])
         if 'privileged' in cconfig:
             cmd.append('--privileged=%s' % str(cconfig['privileged']).lower())
-        if 'restart' in cconfig:
-            cmd.append('--restart=%s' % cconfig['restart'])
-        if 'user' in cconfig:
-            cmd.append('--user=%s' % cconfig['user'])
-        for v in cconfig.get('volumes', []):
-            if v:
-                cmd.append('--volume=%s' % v)
-        for v in cconfig.get('volumes_from', []):
-            if v:
-                cmd.append('--volumes-from=%s' % v)
+        self.string_arg(cconfig, cmd, 'restart', '--restart')
+        self.string_arg(cconfig, cmd, 'user', '--user')
+        self.list_arg(cconfig, cmd, 'volumes', '--volume')
+        self.list_arg(cconfig, cmd, 'volumes_from', '--volumes-from')
+        # TODO(sbaker): deprecate log_tag, implement log_driver, log_opt
         if 'log_tag' in cconfig:
             cmd.append('--log-opt=tag=%s' % cconfig['log_tag'])
-        if 'cpu_shares' in cconfig:
-            cmd.append('--cpu-shares=%s' % cconfig['cpu_shares'])
-        if 'security_opt' in cconfig:
-            cmd.append('--security-opt=%s' % cconfig['security_opt'])
+        self.string_arg(cconfig, cmd, 'cpu_shares', '--cpu-shares')
+        self.string_arg(cconfig, cmd, 'security_opt', '--security-opt')
+        # TODO(sbaker): add missing compose v1 properties:
+        # cap_add, cap_drop
+        # cgroup_parent
+        # devices
+        # dns, dns_search
+        # entrypoint
+        # expose
+        # extra_hosts
+        # labels
+        # ports
+        # stop_signal
+        # volume_driver
+        # cpu_quota
+        # cpuset
+        # domainname
+        # hostname
+        # mac_address
+        # mem_limit
+        # memswap_limit
+        # mem_swappiness
+        # read_only
+        # shm_size
+        # stdin_open
+        # working_dir
 
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))
