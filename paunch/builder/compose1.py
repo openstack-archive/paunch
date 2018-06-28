@@ -13,6 +13,7 @@
 
 import json
 import logging
+import re
 import tenacity
 
 LOG = logging.getLogger(__name__)
@@ -134,9 +135,13 @@ class ComposeV1Builder(object):
         if cconfig.get(key, False):
             cmd.append(arg)
 
-    def string_arg(self, cconfig, cmd, key, arg):
+    def string_arg(self, cconfig, cmd, key, arg, transform=None):
         if key in cconfig:
-            cmd.append('%s=%s' % (arg, cconfig[key]))
+            if transform:
+                value = transform(cconfig[key])
+            else:
+                value = cconfig[key]
+            cmd.append('%s=%s' % (arg, value))
 
     def list_or_string_arg(self, cconfig, cmd, key, arg):
         if key not in cconfig:
@@ -187,8 +192,11 @@ class ComposeV1Builder(object):
                 cmd.append('--health-timeout=%s' % hconfig['timeout'])
             if 'retries' in hconfig:
                 cmd.append('--health-retries=%s' % hconfig['retries'])
-        if 'privileged' in cconfig:
-            cmd.append('--privileged=%s' % str(cconfig['privileged']).lower())
+
+        def lower(a):
+            return str(a).lower()
+
+        self.string_arg(cconfig, cmd, 'privileged', '--privileged', lower)
         self.string_arg(cconfig, cmd, 'restart', '--restart')
         self.string_arg(cconfig, cmd, 'user', '--user')
         self.list_arg(cconfig, cmd, 'volumes', '--volume')
@@ -198,6 +206,42 @@ class ComposeV1Builder(object):
             cmd.append('--log-opt=tag=%s' % cconfig['log_tag'])
         self.string_arg(cconfig, cmd, 'cpu_shares', '--cpu-shares')
         self.string_arg(cconfig, cmd, 'security_opt', '--security-opt')
+        self.string_arg(cconfig, cmd, 'stop_signal', '--stop-signal')
+
+        def duration(a):
+            if isinstance(a, (int, long, float)):
+                return a
+
+            # match groups of the format 5h34m56s
+            m = re.match('^'
+                         '(([\d\.]+)h)?'
+                         '(([\d\.]+)m)?'
+                         '(([\d\.]+)s)?'
+                         '(([\d\.]+)ms)?'
+                         '(([\d\.]+)us)?'
+                         '$', a)
+
+            if not m:
+                # fallback to parsing string as a number
+                return float(a)
+
+            n = 0.0
+            if m.group(2):
+                n += 3600 * float(m.group(2))
+            if m.group(4):
+                n += 60 * float(m.group(4))
+            if m.group(6):
+                n += float(m.group(6))
+            if m.group(8):
+                n += float(m.group(8)) / 1000.0
+            if m.group(10):
+                n += float(m.group(10)) / 1000000.0
+            return n
+
+        self.string_arg(cconfig, cmd,
+                        'stop_grace_period', '--stop-timeout',
+                        duration)
+
         # TODO(sbaker): add missing compose v1 properties:
         # cap_add, cap_drop
         # cgroup_parent

@@ -440,6 +440,37 @@ three-12345678 three''', '', 0),
             cmd
         )
 
+    def test_durations(self):
+        config = {
+            'a': {'stop_grace_period': 123},
+            'b': {'stop_grace_period': 123.5},
+            'c': {'stop_grace_period': '123.3'},
+            'd': {'stop_grace_period': '2.5s'},
+            'e': {'stop_grace_period': '10s'},
+            'f': {'stop_grace_period': '1m30s'},
+            'g': {'stop_grace_period': '2h32m'},
+            'h': {'stop_grace_period': '5h34m56s'},
+            'i': {'stop_grace_period': '1h1m1s1ms1us'},
+        }
+        builder = compose1.ComposeV1Builder('foo', config, None)
+
+        result = {
+            'a': '--stop-timeout=123',
+            'b': '--stop-timeout=123.5',
+            'c': '--stop-timeout=123.3',
+            'd': '--stop-timeout=2.5',
+            'e': '--stop-timeout=10.0',
+            'f': '--stop-timeout=90.0',
+            'g': '--stop-timeout=9120.0',
+            'h': '--stop-timeout=20096.0',
+            'i': '--stop-timeout=3661.001001',
+        }
+
+        for container, arg in result.items():
+            cmd = []
+            builder.docker_run_args(cmd, container)
+            self.assertIn(arg, cmd)
+
     def test_docker_run_args_lists(self):
         config = {
             'one': {
