@@ -484,7 +484,8 @@ three-12345678 three''', '', 0),
                 'env_file': ['/tmp/foo.env', '/tmp/bar.env'],
                 'ulimit': ['nofile=1024', 'nproc=1024'],
                 'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
-                'volumes_from': ['two', 'three']
+                'volumes_from': ['two', 'three'],
+                'group_add': ['docker', 'zuul']
             }
         }
         builder = compose1.ComposeV1Builder('foo', config, None)
@@ -497,6 +498,7 @@ three-12345678 three''', '', 0),
              '--env=FOO=BAR', '--env=BAR=BAZ',
              '--rm', '--interactive', '--tty',
              '--ulimit=nofile=1024', '--ulimit=nproc=1024',
+             '--group-add=docker', '--group-add=zuul',
              '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
              '--volumes-from=two', '--volumes-from=three',
              'centos:7', 'ls', '-l', '/foo'],

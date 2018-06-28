@@ -199,6 +199,7 @@ class ComposeV1Builder(object):
         self.string_arg(cconfig, cmd, 'privileged', '--privileged', lower)
         self.string_arg(cconfig, cmd, 'restart', '--restart')
         self.string_arg(cconfig, cmd, 'user', '--user')
+        self.list_arg(cconfig, cmd, 'group_add', '--group-add')
         self.list_arg(cconfig, cmd, 'volumes', '--volume')
         self.list_arg(cconfig, cmd, 'volumes_from', '--volumes-from')
         # TODO(sbaker): deprecate log_tag, implement log_driver, log_opt
