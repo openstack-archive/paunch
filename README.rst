@@ -8,6 +8,7 @@ Utility to launch and manage containers using YAML based configuration data
 * Documentation: https://docs.openstack.org/developer/paunch
 * Source: https://git.openstack.org/cgit/openstack/paunch
 * Bugs: https://bugs.launchpad.net/paunch
+* Release Notes: https://docs.openstack.org/releasenotes/paunch
 
 Features
 --------
