@@ -22,8 +22,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
     'sphinx.ext.autodoc',
-    #'sphinx.ext.intersphinx',
-    'oslosphinx'
+    'openstackdocstheme',
 ]
 
 # autodoc generation is a bit aggressive and a nuisance when doing heavy
@@ -35,6 +34,11 @@ source_suffix = '.rst'
 
 # The master toctree document.
 master_doc = 'index'
+
+# openstackdocstheme options
+repository_name = 'openstack/paunch'
+bug_project = 'paunch'
+bug_tag = 'docs'
 
 # General information about the project.
 project = u'paunch'
@@ -54,8 +58,7 @@ pygments_style = 'sphinx'
 
 # The theme to use for HTML and HTML Help pages.  Major themes that come with
 # Sphinx are currently 'default' and 'sphinxdoc'.
-# html_theme_path = ["."]
-# html_theme = '_theme'
+html_theme = 'openstackdocs'
 # html_static_path = ['static']
 
 # Output file base name for HTML help builder.
