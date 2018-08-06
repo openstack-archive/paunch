@@ -210,7 +210,7 @@ class ComposeV1Builder(object):
         self.string_arg(cconfig, cmd, 'stop_signal', '--stop-signal')
 
         def duration(a):
-            if isinstance(a, (int, long, float)):
+            if isinstance(a, (int, float)):
                 return a
 
             # match groups of the format 5h34m56s
