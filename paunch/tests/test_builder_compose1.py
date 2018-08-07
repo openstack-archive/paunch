@@ -23,7 +23,7 @@ from paunch import runner
 from paunch.tests import base
 
 
-class TestComposeV1Builder(base.TestCase):
+class TestBaseBuilder(base.TestCase):
 
     def test_apply(self):
         orig_call = tenacity.wait.wait_random_exponential.__call__
@@ -412,46 +412,6 @@ three-12345678 three''', '', 0),
              '--label', 'config_data=null'],
             cmd)
 
-    def test_docker_run_args(self):
-        config = {
-            'one': {
-                'image': 'centos:7',
-                'privileged': True,
-                'user': 'bar',
-                'net': 'host',
-                'ipc': 'host',
-                'pid': 'container:bar',
-                'uts': 'host',
-                'restart': 'always',
-                'healthcheck': {
-                    'test': '/bin/true',
-                    'interval': '30s',
-                    'timeout': '10s',
-                    'retries': 3
-                },
-                'env_file': '/tmp/foo.env',
-                'log_tag': '{{.ImageName}}/{{.Name}}/{{.ID}}',
-                'cpu_shares': 600,
-                'security_opt': 'label:disable'
-            }
-        }
-        builder = compose1.ComposeV1Builder('foo', config, None)
-
-        cmd = ['docker', 'run', '--name', 'one']
-        builder.docker_run_args(cmd, 'one')
-        self.assertEqual(
-            ['docker', 'run', '--name', 'one',
-             '--detach=true', '--env-file=/tmp/foo.env',
-             '--net=host', '--ipc=host', '--pid=container:bar',
-             '--uts=host', '--health-cmd=/bin/true', '--health-interval=30s',
-             '--health-timeout=10s', '--health-retries=3',
-             '--privileged=true', '--restart=always', '--user=bar',
-             '--log-opt=tag={{.ImageName}}/{{.Name}}/{{.ID}}',
-             '--cpu-shares=600',
-             '--security-opt=label:disable', 'centos:7'],
-            cmd
-        )
-
     def test_durations(self):
         config = {
             'a': {'stop_grace_period': 123},
@@ -480,10 +440,10 @@ three-12345678 three''', '', 0),
 
         for container, arg in result.items():
             cmd = []
-            builder.docker_run_args(cmd, container)
+            builder.container_run_args(cmd, container)
             self.assertIn(arg, cmd)
 
-    def test_docker_run_args_lists(self):
+    def test_container_run_args_lists(self):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -503,7 +463,7 @@ three-12345678 three''', '', 0),
         builder = compose1.ComposeV1Builder('foo', config, None)
 
         cmd = ['docker', 'run', '--name', 'one']
-        builder.docker_run_args(cmd, 'one')
+        builder.container_run_args(cmd, 'one')
         self.assertEqual(
             ['docker', 'run', '--name', 'one',
              '--env-file=/tmp/foo.env', '--env-file=/tmp/bar.env',
@@ -561,4 +521,46 @@ three-12345678 three''', '', 0),
         self.assertEqual(
             ['ls', '-l', '"/foo', 'bar"'],
             b.command_argument('ls -l "/foo bar"')
+        )
+
+
+class TestComposeV1Builder(TestBaseBuilder):
+    def test_docker_run_args(self):
+        config = {
+            'one': {
+                'image': 'centos:7',
+                'privileged': True,
+                'user': 'bar',
+                'net': 'host',
+                'ipc': 'host',
+                'pid': 'container:bar',
+                'uts': 'host',
+                'restart': 'always',
+                'healthcheck': {
+                    'test': '/bin/true',
+                    'interval': '30s',
+                    'timeout': '10s',
+                    'retries': 3
+                },
+                'env_file': '/tmp/foo.env',
+                'log_tag': '{{.ImageName}}/{{.Name}}/{{.ID}}',
+                'cpu_shares': 600,
+                'security_opt': 'label:disable'
+            }
+        }
+        builder = compose1.ComposeV1Builder('foo', config, None)
+
+        cmd = ['docker', 'run', '--name', 'one']
+        builder.container_run_args(cmd, 'one')
+        self.assertEqual(
+            ['docker', 'run', '--name', 'one',
+             '--detach=true', '--env-file=/tmp/foo.env',
+             '--net=host', '--ipc=host', '--pid=container:bar',
+             '--uts=host', '--health-cmd=/bin/true', '--health-interval=30s',
+             '--health-timeout=10s', '--health-retries=3',
+             '--privileged=true', '--restart=always', '--user=bar',
+             '--log-opt=tag={{.ImageName}}/{{.Name}}/{{.ID}}',
+             '--cpu-shares=600',
+             '--security-opt=label:disable', 'centos:7'],
+            cmd
         )

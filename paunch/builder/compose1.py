@@ -19,9 +19,9 @@ import tenacity
 LOG = logging.getLogger(__name__)
 
 
-class ComposeV1Builder(object):
+class BaseBuilder(object):
 
-    def __init__(self, config_id, config, runner, labels=None):
+    def __init__(self, config_id, config, runner, labels):
         self.config_id = config_id
         self.config = config
         self.labels = labels
@@ -60,7 +60,7 @@ class ComposeV1Builder(object):
                     self.runner.unique_container_name(container)
                 ]
                 self.label_arguments(cmd, container)
-                self.docker_run_args(cmd, container)
+                self.container_run_args(cmd, container)
             elif action == 'exec':
                 cmd = [self.runner.docker_cmd, 'exec']
                 self.docker_exec_args(cmd, container)
@@ -161,116 +161,6 @@ class ComposeV1Builder(object):
             if v:
                 cmd.append('%s=%s' % (arg, v))
 
-    def docker_run_args(self, cmd, container):
-        cconfig = self.config[container]
-        if cconfig.get('detach', True):
-            cmd.append('--detach=true')
-        self.list_or_string_arg(cconfig, cmd, 'env_file', '--env-file')
-        # TODO(sbaker): support the dict layout for this property
-        for v in cconfig.get('environment', []):
-            if v:
-                cmd.append('--env=%s' % v)
-        self.boolean_arg(cconfig, cmd, 'remove', '--rm')
-        self.boolean_arg(cconfig, cmd, 'interactive', '--interactive')
-        self.boolean_arg(cconfig, cmd, 'tty', '--tty')
-        self.string_arg(cconfig, cmd, 'net', '--net')
-        self.string_arg(cconfig, cmd, 'ipc', '--ipc')
-        self.string_arg(cconfig, cmd, 'pid', '--pid')
-        self.string_arg(cconfig, cmd, 'uts', '--uts')
-        # TODO(sbaker): implement ulimits property, deprecate this ulimit
-        # property
-        for u in cconfig.get('ulimit', []):
-            if u:
-                cmd.append('--ulimit=%s' % u)
-        if 'healthcheck' in cconfig:
-            hconfig = cconfig['healthcheck']
-            if 'test' in hconfig:
-                cmd.append('--health-cmd=%s' % hconfig['test'])
-            if 'interval' in hconfig:
-                cmd.append('--health-interval=%s' % hconfig['interval'])
-            if 'timeout' in hconfig:
-                cmd.append('--health-timeout=%s' % hconfig['timeout'])
-            if 'retries' in hconfig:
-                cmd.append('--health-retries=%s' % hconfig['retries'])
-
-        def lower(a):
-            return str(a).lower()
-
-        self.string_arg(cconfig, cmd, 'privileged', '--privileged', lower)
-        self.string_arg(cconfig, cmd, 'restart', '--restart')
-        self.string_arg(cconfig, cmd, 'user', '--user')
-        self.list_arg(cconfig, cmd, 'group_add', '--group-add')
-        self.list_arg(cconfig, cmd, 'volumes', '--volume')
-        self.list_arg(cconfig, cmd, 'volumes_from', '--volumes-from')
-        # TODO(sbaker): deprecate log_tag, implement log_driver, log_opt
-        if 'log_tag' in cconfig:
-            cmd.append('--log-opt=tag=%s' % cconfig['log_tag'])
-        self.string_arg(cconfig, cmd, 'cpu_shares', '--cpu-shares')
-        self.string_arg(cconfig, cmd, 'security_opt', '--security-opt')
-        self.string_arg(cconfig, cmd, 'stop_signal', '--stop-signal')
-
-        def duration(a):
-            if isinstance(a, (int, float)):
-                return a
-
-            # match groups of the format 5h34m56s
-            m = re.match('^'
-                         '(([\d\.]+)h)?'
-                         '(([\d\.]+)m)?'
-                         '(([\d\.]+)s)?'
-                         '(([\d\.]+)ms)?'
-                         '(([\d\.]+)us)?'
-                         '$', a)
-
-            if not m:
-                # fallback to parsing string as a number
-                return float(a)
-
-            n = 0.0
-            if m.group(2):
-                n += 3600 * float(m.group(2))
-            if m.group(4):
-                n += 60 * float(m.group(4))
-            if m.group(6):
-                n += float(m.group(6))
-            if m.group(8):
-                n += float(m.group(8)) / 1000.0
-            if m.group(10):
-                n += float(m.group(10)) / 1000000.0
-            return n
-
-        self.string_arg(cconfig, cmd,
-                        'stop_grace_period', '--stop-timeout',
-                        duration)
-
-        # TODO(sbaker): add missing compose v1 properties:
-        # cap_add, cap_drop
-        # cgroup_parent
-        # devices
-        # dns, dns_search
-        # entrypoint
-        # expose
-        # extra_hosts
-        # labels
-        # ports
-        # stop_signal
-        # volume_driver
-        # cpu_quota
-        # cpuset
-        # domainname
-        # hostname
-        # mac_address
-        # mem_limit
-        # memswap_limit
-        # mem_swappiness
-        # read_only
-        # shm_size
-        # stdin_open
-        # working_dir
-
-        cmd.append(cconfig.get('image', ''))
-        cmd.extend(self.command_argument(cconfig.get('command')))
-
     def docker_exec_args(self, cmd, container):
         cconfig = self.config[container]
         if 'privileged' in cconfig:
@@ -341,6 +231,123 @@ class ComposeV1Builder(object):
         if not isinstance(command, list):
             return command.split()
         return command
+
+    def lower(self, a):
+        return str(a).lower()
+
+    def duration(self, a):
+        if isinstance(a, (int, float)):
+            return a
+
+        # match groups of the format 5h34m56s
+        m = re.match('^'
+                     '(([\d\.]+)h)?'
+                     '(([\d\.]+)m)?'
+                     '(([\d\.]+)s)?'
+                     '(([\d\.]+)ms)?'
+                     '(([\d\.]+)us)?'
+                     '$', a)
+
+        if not m:
+            # fallback to parsing string as a number
+            return float(a)
+
+        n = 0.0
+        if m.group(2):
+            n += 3600 * float(m.group(2))
+        if m.group(4):
+            n += 60 * float(m.group(4))
+        if m.group(6):
+            n += float(m.group(6))
+        if m.group(8):
+            n += float(m.group(8)) / 1000.0
+        if m.group(10):
+            n += float(m.group(10)) / 1000000.0
+        return n
+
+
+class ComposeV1Builder(BaseBuilder):
+
+    def __init__(self, config_id, config, runner, labels=None):
+        super(ComposeV1Builder, self).__init__(config_id, config, runner,
+                                               labels)
+
+    def container_run_args(self, cmd, container):
+        cconfig = self.config[container]
+        if cconfig.get('detach', True):
+            cmd.append('--detach=true')
+        self.list_or_string_arg(cconfig, cmd, 'env_file', '--env-file')
+        # TODO(sbaker): support the dict layout for this property
+        for v in cconfig.get('environment', []):
+            if v:
+                cmd.append('--env=%s' % v)
+        self.boolean_arg(cconfig, cmd, 'remove', '--rm')
+        self.boolean_arg(cconfig, cmd, 'interactive', '--interactive')
+        self.boolean_arg(cconfig, cmd, 'tty', '--tty')
+        self.string_arg(cconfig, cmd, 'net', '--net')
+        self.string_arg(cconfig, cmd, 'ipc', '--ipc')
+        self.string_arg(cconfig, cmd, 'pid', '--pid')
+        self.string_arg(cconfig, cmd, 'uts', '--uts')
+        # TODO(sbaker): implement ulimits property, deprecate this ulimit
+        # property
+        for u in cconfig.get('ulimit', []):
+            if u:
+                cmd.append('--ulimit=%s' % u)
+        if 'healthcheck' in cconfig:
+            hconfig = cconfig['healthcheck']
+            if 'test' in hconfig:
+                cmd.append('--health-cmd=%s' % hconfig['test'])
+            if 'interval' in hconfig:
+                cmd.append('--health-interval=%s' % hconfig['interval'])
+            if 'timeout' in hconfig:
+                cmd.append('--health-timeout=%s' % hconfig['timeout'])
+            if 'retries' in hconfig:
+                cmd.append('--health-retries=%s' % hconfig['retries'])
+
+        self.string_arg(cconfig, cmd, 'privileged', '--privileged', self.lower)
+        self.string_arg(cconfig, cmd, 'restart', '--restart')
+        self.string_arg(cconfig, cmd, 'user', '--user')
+        self.list_arg(cconfig, cmd, 'group_add', '--group-add')
+        self.list_arg(cconfig, cmd, 'volumes', '--volume')
+        self.list_arg(cconfig, cmd, 'volumes_from', '--volumes-from')
+        # TODO(sbaker): deprecate log_tag, implement log_driver, log_opt
+        if 'log_tag' in cconfig:
+            cmd.append('--log-opt=tag=%s' % cconfig['log_tag'])
+        self.string_arg(cconfig, cmd, 'cpu_shares', '--cpu-shares')
+        self.string_arg(cconfig, cmd, 'security_opt', '--security-opt')
+        self.string_arg(cconfig, cmd, 'stop_signal', '--stop-signal')
+
+        self.string_arg(cconfig, cmd,
+                        'stop_grace_period', '--stop-timeout',
+                        self.duration)
+
+        # TODO(sbaker): add missing compose v1 properties:
+        # cap_add, cap_drop
+        # cgroup_parent
+        # devices
+        # dns, dns_search
+        # entrypoint
+        # expose
+        # extra_hosts
+        # labels
+        # ports
+        # stop_signal
+        # volume_driver
+        # cpu_quota
+        # cpuset
+        # domainname
+        # hostname
+        # mac_address
+        # mem_limit
+        # memswap_limit
+        # mem_swappiness
+        # read_only
+        # shm_size
+        # stdin_open
+        # working_dir
+
+        cmd.append(cconfig.get('image', ''))
+        cmd.extend(self.command_argument(cconfig.get('command')))
 
 
 class PullException(Exception):
