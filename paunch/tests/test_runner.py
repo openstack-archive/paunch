@@ -19,10 +19,9 @@ from paunch import runner
 from paunch.tests import base
 
 
-class TestDockerRunner(base.TestCase):
-
+class TestBaseRunner(base.TestCase):
     def setUp(self):
-        super(TestDockerRunner, self).setUp()
+        super(TestBaseRunner, self).setUp()
         self.runner = runner.DockerRunner('tester')
 
     def mock_execute(self, popen, stdout, stderr, returncode):
@@ -72,103 +71,6 @@ class TestDockerRunner(base.TestCase):
                     '--filter', 'label=config_id=foo']
         )
         self.assertEqual(['one', 'two', 'three'], result)
-
-    @mock.patch('subprocess.Popen')
-    def test_remove_containers(self, popen):
-        self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
-        self.runner.remove_container = mock.Mock()
-
-        self.runner.remove_containers('foo')
-
-        self.assert_execute(
-            popen, ['docker', 'ps', '-q', '-a',
-                    '--filter', 'label=managed_by=tester',
-                    '--filter', 'label=config_id=foo']
-        )
-        self.runner.remove_container.assert_has_calls([
-            mock.call('one'), mock.call('two'), mock.call('three')
-        ])
-
-    @mock.patch('subprocess.Popen')
-    def test_remove_container(self, popen):
-        self.mock_execute(popen, '', '', 0)
-
-        self.runner.remove_container('one')
-        self.assert_execute(
-            popen, ['docker', 'rm', '-f', 'one']
-        )
-
-    @mock.patch('subprocess.Popen')
-    def test_container_names(self, popen):
-        ps_result = '''one one
-two-12345678 two
-two two
-three-12345678 three
-four-12345678 four
-'''
-
-        self.mock_execute(popen, ps_result, '', 0)
-
-        names = list(self.runner.container_names())
-
-        self.assert_execute(
-            popen, ['docker', 'ps', '-a',
-                    '--filter', 'label=managed_by=tester',
-                    '--format', '{{.Names}} {{.Label "container_name"}}']
-        )
-        self.assertEqual([
-            ['one', 'one'],
-            ['two-12345678', 'two'],
-            ['two', 'two'],
-            ['three-12345678', 'three'],
-            ['four-12345678', 'four']
-        ], names)
-
-    @mock.patch('subprocess.Popen')
-    def test_container_names_by_conf_id(self, popen):
-        ps_result = '''one one
-two-12345678 two
-'''
-
-        self.mock_execute(popen, ps_result, '', 0)
-
-        names = list(self.runner.container_names('abc'))
-
-        self.assert_execute(
-            popen, ['docker', 'ps', '-a',
-                    '--filter', 'label=managed_by=tester',
-                    '--filter', 'label=config_id=abc',
-                    '--format', '{{.Names}} {{.Label "container_name"}}']
-        )
-        self.assertEqual([
-            ['one', 'one'],
-            ['two-12345678', 'two']
-        ], names)
-
-    @mock.patch('subprocess.Popen')
-    def test_rename_containers(self, popen):
-        ps_result = '''one one
-two-12345678 two
-two two
-three-12345678 three
-four-12345678 four
-'''
-
-        self.mock_execute(popen, ps_result, '', 0)
-        self.runner.rename_container = mock.Mock()
-
-        self.runner.rename_containers()
-
-        self.assert_execute(
-            popen, ['docker', 'ps', '-a',
-                    '--filter', 'label=managed_by=tester',
-                    '--format', '{{.Names}} {{.Label "container_name"}}']
-        )
-        # only containers three-12345678 and four-12345678 four will be renamed
-        self.runner.rename_container.assert_has_calls([
-            mock.call('three-12345678', 'three'),
-            mock.call('four-12345678', 'four')
-        ], any_order=True)
 
     @mock.patch('subprocess.Popen')
     def test_inspect(self, popen):
@@ -284,3 +186,103 @@ four-12345678 four
             'two': [{'e': 'f'}, {'e': 'f'}, {'e': 'f'}],
             'three': [{'e': 'f'}, {'e': 'f'}, {'e': 'f'}]
         }, result)
+
+
+class TestDockerRunner(TestBaseRunner):
+
+    @mock.patch('subprocess.Popen')
+    def test_remove_containers(self, popen):
+        self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
+        self.runner.remove_container = mock.Mock()
+
+        self.runner.remove_containers('foo')
+
+        self.assert_execute(
+            popen, ['docker', 'ps', '-q', '-a',
+                    '--filter', 'label=managed_by=tester',
+                    '--filter', 'label=config_id=foo']
+        )
+        self.runner.remove_container.assert_has_calls([
+            mock.call('one'), mock.call('two'), mock.call('three')
+        ])
+
+    @mock.patch('subprocess.Popen')
+    def test_remove_container(self, popen):
+        self.mock_execute(popen, '', '', 0)
+
+        self.runner.remove_container('one')
+        self.assert_execute(
+            popen, ['docker', 'rm', '-f', 'one']
+        )
+
+    @mock.patch('subprocess.Popen')
+    def test_container_names(self, popen):
+        ps_result = '''one one
+two-12345678 two
+two two
+three-12345678 three
+four-12345678 four
+'''
+
+        self.mock_execute(popen, ps_result, '', 0)
+
+        names = list(self.runner.container_names())
+
+        self.assert_execute(
+            popen, ['docker', 'ps', '-a',
+                    '--filter', 'label=managed_by=tester',
+                    '--format', '{{.Names}} {{.Label "container_name"}}']
+        )
+        self.assertEqual([
+            ['one', 'one'],
+            ['two-12345678', 'two'],
+            ['two', 'two'],
+            ['three-12345678', 'three'],
+            ['four-12345678', 'four']
+        ], names)
+
+    @mock.patch('subprocess.Popen')
+    def test_container_names_by_conf_id(self, popen):
+        ps_result = '''one one
+two-12345678 two
+'''
+
+        self.mock_execute(popen, ps_result, '', 0)
+
+        names = list(self.runner.container_names('abc'))
+
+        self.assert_execute(
+            popen, ['docker', 'ps', '-a',
+                    '--filter', 'label=managed_by=tester',
+                    '--filter', 'label=config_id=abc',
+                    '--format', '{{.Names}} {{.Label "container_name"}}']
+        )
+        self.assertEqual([
+            ['one', 'one'],
+            ['two-12345678', 'two']
+        ], names)
+
+    @mock.patch('subprocess.Popen')
+    def test_rename_containers(self, popen):
+        ps_result = '''one one
+two-12345678 two
+two two
+three-12345678 three
+four-12345678 four
+'''
+
+        self.mock_execute(popen, ps_result, '', 0)
+        self.runner.rename_container = mock.Mock()
+
+        self.runner.rename_containers()
+
+        self.assert_execute(
+            popen, ['docker', 'ps', '-a',
+                    '--filter', 'label=managed_by=tester',
+                    '--format', '{{.Names}} {{.Label "container_name"}}']
+        )
+        # only containers three-12345678 and four-12345678 four will be renamed
+        self.runner.rename_container.assert_has_calls([
+            mock.call('three-12345678', 'three'),
+            mock.call('four-12345678', 'four')
+        ], any_order=True)
