@@ -18,11 +18,11 @@ from paunch.builder import base
 LOG = logging.getLogger(__name__)
 
 
-class ComposeV1Builder(base.BaseBuilder):
+class PodmanBuilder(base.BaseBuilder):
 
     def __init__(self, config_id, config, runner, labels=None):
-        super(ComposeV1Builder, self).__init__(config_id, config, runner,
-                                               labels)
+        super(PodmanBuilder, self).__init__(config_id, config, runner,
+                                            labels)
 
     def container_run_args(self, cmd, container):
         cconfig = self.config[container]
@@ -45,19 +45,8 @@ class ComposeV1Builder(base.BaseBuilder):
         for u in cconfig.get('ulimit', []):
             if u:
                 cmd.append('--ulimit=%s' % u)
-        if 'healthcheck' in cconfig:
-            hconfig = cconfig['healthcheck']
-            if 'test' in hconfig:
-                cmd.append('--health-cmd=%s' % hconfig['test'])
-            if 'interval' in hconfig:
-                cmd.append('--health-interval=%s' % hconfig['interval'])
-            if 'timeout' in hconfig:
-                cmd.append('--health-timeout=%s' % hconfig['timeout'])
-            if 'retries' in hconfig:
-                cmd.append('--health-retries=%s' % hconfig['retries'])
 
         self.string_arg(cconfig, cmd, 'privileged', '--privileged', self.lower)
-        self.string_arg(cconfig, cmd, 'restart', '--restart')
         self.string_arg(cconfig, cmd, 'user', '--user')
         self.list_arg(cconfig, cmd, 'group_add', '--group-add')
         self.list_arg(cconfig, cmd, 'volumes', '--volume')
@@ -72,31 +61,6 @@ class ComposeV1Builder(base.BaseBuilder):
         self.string_arg(cconfig, cmd,
                         'stop_grace_period', '--stop-timeout',
                         self.duration)
-
-        # TODO(sbaker): add missing compose v1 properties:
-        # cap_add, cap_drop
-        # cgroup_parent
-        # devices
-        # dns, dns_search
-        # entrypoint
-        # expose
-        # extra_hosts
-        # labels
-        # ports
-        # stop_signal
-        # volume_driver
-        # cpu_quota
-        # cpuset
-        # domainname
-        # hostname
-        # mac_address
-        # mem_limit
-        # memswap_limit
-        # mem_swappiness
-        # read_only
-        # shm_size
-        # stdin_open
-        # working_dir
 
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))

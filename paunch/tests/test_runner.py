@@ -187,9 +187,6 @@ class TestBaseRunner(base.TestCase):
             'three': [{'e': 'f'}, {'e': 'f'}, {'e': 'f'}]
         }, result)
 
-
-class TestDockerRunner(TestBaseRunner):
-
     @mock.patch('subprocess.Popen')
     def test_remove_containers(self, popen):
         self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
@@ -262,6 +259,9 @@ two-12345678 two
             ['two-12345678', 'two']
         ], names)
 
+
+class TestDockerRunner(TestBaseRunner):
+
     @mock.patch('subprocess.Popen')
     def test_rename_containers(self, popen):
         ps_result = '''one one
@@ -286,3 +286,7 @@ four-12345678 four
             mock.call('three-12345678', 'three'),
             mock.call('four-12345678', 'four')
         ], any_order=True)
+
+
+class PodmanRunner(TestBaseRunner):
+    pass

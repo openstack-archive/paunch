@@ -12,11 +12,11 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-from paunch.builder import compose1
-from paunch.tests import test_builder_base as tbb
+from paunch.builder import podman
+from paunch.tests import test_builder_base as base
 
 
-class TestComposeV1Builder(tbb.TestBaseBuilder):
+class TestPodmanBuilder(base.TestBaseBuilder):
     def test_docker_run_args(self):
         config = {
             'one': {
@@ -28,29 +28,21 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
                 'pid': 'container:bar',
                 'uts': 'host',
                 'restart': 'always',
-                'healthcheck': {
-                    'test': '/bin/true',
-                    'interval': '30s',
-                    'timeout': '10s',
-                    'retries': 3
-                },
                 'env_file': '/tmp/foo.env',
                 'log_tag': '{{.ImageName}}/{{.Name}}/{{.ID}}',
                 'cpu_shares': 600,
                 'security_opt': 'label:disable'
             }
         }
-        builder = compose1.ComposeV1Builder('foo', config, None)
+        builder = podman.PodmanBuilder('foo', config, None)
 
-        cmd = ['docker', 'run', '--name', 'one']
+        cmd = ['podman', 'run', '--name', 'one']
         builder.container_run_args(cmd, 'one')
         self.assertEqual(
-            ['docker', 'run', '--name', 'one',
+            ['podman', 'run', '--name', 'one',
              '--detach=true', '--env-file=/tmp/foo.env',
              '--net=host', '--ipc=host', '--pid=container:bar',
-             '--uts=host', '--health-cmd=/bin/true', '--health-interval=30s',
-             '--health-timeout=10s', '--health-retries=3',
-             '--privileged=true', '--restart=always', '--user=bar',
+             '--uts=host', '--privileged=true', '--user=bar',
              '--log-opt=tag={{.ImageName}}/{{.Name}}/{{.ID}}',
              '--cpu-shares=600',
              '--security-opt=label:disable', 'centos:7'],

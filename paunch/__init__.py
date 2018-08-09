@@ -18,6 +18,7 @@ import pbr.version
 import yaml
 
 from paunch.builder import compose1
+from paunch.builder import podman
 from paunch import runner
 
 __version__ = pbr.version.VersionInfo('paunch').version_string()
@@ -47,10 +48,17 @@ def apply(config_id, config, managed_by, labels=None, docker_cmd=None,
                                overall success of the apply.
     :rtype: tuple
     """
-    # TODO(emilien) Call the right runner based on default_runtime
-    r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
     if default_runtime == 'docker':
+        r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
         builder = compose1.ComposeV1Builder(
+            config_id=config_id,
+            config=config,
+            runner=r,
+            labels=labels
+        )
+    elif default_runtime == 'podman':
+        r = runner.PodmanRunner(managed_by, docker_cmd=docker_cmd)
+        builder = podman.PodmanBuilder(
             config_id=config_id,
             config=config,
             runner=r,
@@ -61,7 +69,7 @@ def apply(config_id, config, managed_by, labels=None, docker_cmd=None,
     return builder.apply()
 
 
-def cleanup(config_ids, managed_by, docker_cmd=None):
+def cleanup(config_ids, managed_by, docker_cmd=None, default_runtime='docker'):
     """Delete containers no longer applied, rename others to preferred name.
 
     :param list config_ids: List of config IDs still applied. All containers
@@ -70,25 +78,44 @@ def cleanup(config_ids, managed_by, docker_cmd=None):
     :param str managed_by: Name of the tool managing the containers. Only
                            containers labelled with this will be modified.
     :param str docker_cmd: Optional override to the docker command to run.
+    :param str default_runtime: Optional override to the default runtime used
+                                for containers.
     """
-    r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
+    if default_runtime == 'docker':
+        r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
+    elif default_runtime == 'podman':
+        r = runner.PodmanRunner(managed_by, docker_cmd=docker_cmd)
+        LOG.warning("paunch cleanup is partially supported with podman")
+    else:
+        LOG.error("container runtime not supported: %s" % default_runtime)
     r.delete_missing_configs(config_ids)
     r.rename_containers()
 
 
-def list(managed_by, docker_cmd=None):
+def list(managed_by, docker_cmd=None, default_runtime='docker'):
     """List all containers associated with all config IDs.
+
+    :param str managed_by: Name of the tool managing the containers. Only
+                           containers labelled with this will be modified.
+    :param str docker_cmd: Optional override to the docker command to run.
+    :param str default_runtime: Optional override to the default runtime used
+                                for containers.
 
     :returns a dict where the key is the config ID and the value is a list of
              'docker inspect' dicts for each container.
     :rtype: defaultdict(list)
     """
-    r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
+    if default_runtime == 'docker':
+        r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
+    elif default_runtime == 'podman':
+        r = runner.PodmanRunner(managed_by, docker_cmd=docker_cmd)
+    else:
+        LOG.error("container runtime not supported: %s" % default_runtime)
     return r.list_configs()
 
 
 def debug(config_id, container_name, action, config, managed_by, labels=None,
-          docker_cmd=None):
+          docker_cmd=None, default_runtime='docker'):
     """Execute supplied container configuration.
 
     :param str config_id: Unique config ID, should not be re-used until any
@@ -104,19 +131,32 @@ def debug(config_id, container_name, action, config, managed_by, labels=None,
     :param dict labels: Optional keys/values of labels to apply to containers
                         created with this invocation.
     :param str docker_cmd: Optional override to the docker command to run.
+    :param str default_runtime: Optional override to the default runtime used
+                                for containers.
 
     :returns integer return value from running command or failure for any
              other reason.
     :rtype: int
     """
 
-    r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
-    builder = compose1.ComposeV1Builder(
-        config_id=config_id,
-        config=config,
-        runner=r,
-        labels=labels
-    )
+    if default_runtime == 'docker':
+        r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
+        builder = compose1.ComposeV1Builder(
+            config_id=config_id,
+            config=config,
+            runner=r,
+            labels=labels
+        )
+    elif default_runtime == 'podman':
+        r = runner.PodmanRunner(managed_by, docker_cmd=docker_cmd)
+        builder = podman.PodmanBuilder(
+            config_id=config_id,
+            config=config,
+            runner=r,
+            labels=labels
+        )
+    else:
+        LOG.error("container runtime not supported: %s" % default_runtime)
     if action == 'print-cmd':
         cmd = [
             r.docker_cmd,
@@ -144,17 +184,25 @@ def debug(config_id, container_name, action, config, managed_by, labels=None,
                          '"print-cmd", or "run"')
 
 
-def delete(config_ids, managed_by, docker_cmd=None):
+def delete(config_ids, managed_by, docker_cmd=None, default_runtime='docker'):
     """Delete containers with the specified config IDs.
 
     :param list config_ids: List of config IDs to delete the containers for.
     :param str managed_by: Name of the tool managing the containers. Only
                            containers labelled with this will be modified.
     :param str docker_cmd: Optional override to the docker command to run.
+    :param str default_runtime: Optional override to the default runtime used
+                                for containers.
     """
     if not config_ids:
         LOG.warn('No config IDs specified')
 
-    r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
+    if default_runtime == 'docker':
+        r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
+    elif default_runtime == 'podman':
+        r = runner.PodmanRunner(managed_by, docker_cmd=docker_cmd)
+        LOG.warning("paunch cleanup is partially supported with podman")
+    else:
+        LOG.error("container runtime not supported: %s" % default_runtime)
     for conf_id in config_ids:
         r.remove_containers(conf_id)

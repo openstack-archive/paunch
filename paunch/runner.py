@@ -129,24 +129,6 @@ class BaseRunner(object):
                 configs[conf_id].append(self.inspect(container))
         return configs
 
-
-class DockerRunner(BaseRunner):
-
-    def __init__(self, managed_by, docker_cmd='docker'):
-        docker_cmd = docker_cmd or 'docker'
-        super(DockerRunner, self).__init__(managed_by, docker_cmd)
-
-    def remove_containers(self, conf_id):
-        for container in self.containers_in_config(conf_id):
-            self.remove_container(container)
-
-    def remove_container(self, container):
-        cmd = [self.docker_cmd, 'rm', '-f', container]
-        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
-        if returncode != 0:
-            LOG.error('Error removing container: %s' % container)
-            LOG.error(cmd_stderr)
-
     def container_names(self, conf_id=None):
         # list every container name, and its container_name label
         cmd = [
@@ -166,6 +148,17 @@ class DockerRunner(BaseRunner):
         for line in cmd_stdout.split("\n"):
             if line:
                 yield line.split()
+
+    def remove_containers(self, conf_id):
+        for container in self.containers_in_config(conf_id):
+            self.remove_container(container)
+
+    def remove_container(self, container):
+        cmd = [self.docker_cmd, 'rm', '-f', container]
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        if returncode != 0:
+            LOG.error('Error removing container: %s' % container)
+            LOG.error(cmd_stderr)
 
     def rename_containers(self):
         current_containers = []
@@ -192,9 +185,29 @@ class DockerRunner(BaseRunner):
                 self.rename_container(current, desired)
                 current_containers.append(desired)
 
+
+class DockerRunner(BaseRunner):
+
+    def __init__(self, managed_by, docker_cmd=None):
+        docker_cmd = docker_cmd or 'docker'
+        super(DockerRunner, self).__init__(managed_by, docker_cmd)
+
     def rename_container(self, container, name):
         cmd = [self.docker_cmd, 'rename', container, name]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
         if returncode != 0:
             LOG.error('Error renaming container: %s' % container)
             LOG.error(cmd_stderr)
+
+
+class PodmanRunner(BaseRunner):
+
+    def __init__(self, managed_by, docker_cmd=None):
+        docker_cmd = docker_cmd or 'podman'
+        super(PodmanRunner, self).__init__(managed_by, docker_cmd)
+
+    def rename_container(self, container, name):
+        # TODO(emilien) podman doesn't support rename, we'll handle it
+        # in paunch itself, probably.
+        LOG.warning("container renaming isn't supported by podman")
+        pass
