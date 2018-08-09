@@ -56,6 +56,12 @@ class Apply(command.Command):
             required=True,
             help=('ID to assign to containers'),
         )
+        parser.add_argument(
+            '--default-runtime',
+            dest='default_runtime',
+            default='docker',
+            help=('Default runtime for containers. Can be docker or podman.'),
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -72,7 +78,8 @@ class Apply(command.Command):
             parsed_args.config_id,
             config,
             managed_by='paunch',
-            labels=labels
+            labels=labels,
+            default_runtime=parsed_args.default_runtime
         )
 
         return rc

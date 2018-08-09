@@ -25,7 +25,8 @@ __version__ = pbr.version.VersionInfo('paunch').version_string()
 LOG = logging.getLogger(__name__)
 
 
-def apply(config_id, config, managed_by, labels=None, docker_cmd=None):
+def apply(config_id, config, managed_by, labels=None, docker_cmd=None,
+          default_runtime='docker'):
     """Execute supplied container configuration.
 
     :param str config_id: Unique config ID, should not be re-used until any
@@ -38,19 +39,25 @@ def apply(config_id, config, managed_by, labels=None, docker_cmd=None):
     :param dict labels: Optional keys/values of labels to apply to containers
                         created with this invocation.
     :param str docker_cmd: Optional override to the docker command to run.
+    :param str default_runtime: Optional override to the default runtime used
+                                for containers.
 
     :returns (list, list, int) lists of stdout and stderr for each execution,
                                and a single return code representing the
                                overall success of the apply.
     :rtype: tuple
     """
+    # TODO(emilien) Call the right runner based on default_runtime
     r = runner.DockerRunner(managed_by, docker_cmd=docker_cmd)
-    builder = compose1.ComposeV1Builder(
-        config_id=config_id,
-        config=config,
-        runner=r,
-        labels=labels
-    )
+    if default_runtime == 'docker':
+        builder = compose1.ComposeV1Builder(
+            config_id=config_id,
+            config=config,
+            runner=r,
+            labels=labels
+        )
+    else:
+        LOG.error("container runtime not supported: %s" % default_runtime)
     return builder.apply()
 
 
