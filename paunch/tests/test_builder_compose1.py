@@ -13,8 +13,10 @@
 # under the License.
 
 import collections
+import inspect
 import json
 import mock
+import tenacity
 
 from paunch.builder import compose1
 from paunch import runner
@@ -23,9 +25,9 @@ from paunch.tests import base
 
 class TestComposeV1Builder(base.TestCase):
 
-    @mock.patch('tenacity.wait.wait_random_exponential.__call__')
-    def test_apply(self, mock_wait):
-        mock_wait.return_value = 0
+    def test_apply(self):
+        orig_call = tenacity.wait.wait_random_exponential.__call__
+        orig_argspec = inspect.getargspec(orig_call)
         config = {
             'one': {
                 'start_order': 0,
@@ -70,7 +72,12 @@ class TestComposeV1Builder(base.TestCase):
         r.unique_container_name = lambda n: '%s-12345678' % n
         r.execute = exe
 
-        builder = compose1.ComposeV1Builder('foo', config, r)
+        with mock.patch('tenacity.wait.wait_random_exponential.__call__') as f:
+            f.return_value = 0
+            with mock.patch('inspect.getargspec') as mock_args:
+                mock_args.return_value = orig_argspec
+                builder = compose1.ComposeV1Builder('foo', config, r)
+
         stdout, stderr, deploy_status_code = builder.apply()
         self.assertEqual(0, deploy_status_code)
         self.assertEqual([
@@ -309,9 +316,9 @@ three-12345678 three''', '', 0),
             ),
         ])
 
-    @mock.patch('tenacity.wait.wait_random_exponential.__call__')
-    def test_apply_failed_pull(self, mock_wait):
-        mock_wait.return_value = 0
+    def test_apply_failed_pull(self):
+        orig_call = tenacity.wait.wait_random_exponential.__call__
+        orig_argspec = inspect.getargspec(orig_call)
         config = {
             'one': {
                 'start_order': 0,
@@ -348,7 +355,12 @@ three-12345678 three''', '', 0),
         ]
         r.execute = exe
 
-        builder = compose1.ComposeV1Builder('foo', config, r)
+        with mock.patch('tenacity.wait.wait_random_exponential.__call__') as f:
+            f.return_value = 0
+            with mock.patch('inspect.getargspec') as mock_args:
+                mock_args.return_value = orig_argspec
+                builder = compose1.ComposeV1Builder('foo', config, r)
+
         stdout, stderr, deploy_status_code = builder.apply()
         self.assertEqual(1, deploy_status_code)
         self.assertEqual(['Pulling centos:7'], stdout)
