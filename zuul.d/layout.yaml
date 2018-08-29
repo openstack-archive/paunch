@@ -1,4 +1,7 @@
-
 - project:
     templates:
       - tripleo-multinode-container-minimal
+      - check-requirements
+      - publish-openstack-sphinx-docs
+      - openstack-python-jobs
+      - release-notes-jobs
