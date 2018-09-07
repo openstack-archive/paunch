@@ -1,0 +1,7 @@
+---
+features:
+  - |
+    For all containers managed by podman, we'll create a systemd unit file
+    so the containers automatically start at boot and restart at failure.
+    When the container is removed, we'll disable and stop the service, then
+    remove the systemd unit file.

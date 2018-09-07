@@ -18,6 +18,7 @@ import random
 import string
 import subprocess
 
+from paunch.utils import systemd
 
 LOG = logging.getLogger(__name__)
 
@@ -154,6 +155,8 @@ class BaseRunner(object):
             self.remove_container(container)
 
     def remove_container(self, container):
+        if self.docker_cmd == 'podman':
+            systemd.service_delete(container)
         cmd = [self.docker_cmd, 'rm', '-f', container]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
         if returncode != 0:

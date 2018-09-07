@@ -16,6 +16,8 @@ import logging
 import re
 import tenacity
 
+from paunch.utils import systemd
+
 LOG = logging.getLogger(__name__)
 
 
@@ -45,8 +47,15 @@ class BaseBuilder(object):
 
         for container in sorted(self.config, key=key_fltr):
             LOG.debug("Running container: %s" % container)
-            action = self.config[container].get('action', 'run')
-            exit_codes = self.config[container].get('exit_codes', [0])
+            cconfig = self.config[container]
+            action = cconfig.get('action', 'run')
+            restart = cconfig.get('restart', 'none')
+            exit_codes = cconfig.get('exit_codes', [0])
+            container_name = self.runner.unique_container_name(container)
+            systemd_managed = (restart != 'none'
+                               and self.runner.docker_cmd == 'podman'
+                               and action == 'run')
+            start_cmd = 'create' if systemd_managed else 'run'
 
             if action == 'run':
                 if container in desired_names:
@@ -55,9 +64,9 @@ class BaseBuilder(object):
 
                 cmd = [
                     self.runner.docker_cmd,
-                    'run',
+                    start_cmd,
                     '--name',
-                    self.runner.unique_container_name(container)
+                    container_name
                 ]
                 self.label_arguments(cmd, container)
                 self.container_run_args(cmd, container)
@@ -80,6 +89,8 @@ class BaseBuilder(object):
                 LOG.debug('Completed $ %s' % ' '.join(cmd))
                 LOG.info("stdout: %s" % cmd_stdout)
                 LOG.info("stderr: %s" % cmd_stderr)
+                if systemd_managed:
+                    systemd.service_create(container_name, cconfig)
         return stdout, stderr, deploy_status_code
 
     def delete_missing_and_updated(self):
