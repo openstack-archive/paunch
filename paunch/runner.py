@@ -24,9 +24,9 @@ LOG = logging.getLogger(__name__)
 
 
 class BaseRunner(object):
-    def __init__(self, managed_by, docker_cmd):
+    def __init__(self, managed_by, cont_cmd):
         self.managed_by = managed_by
-        self.docker_cmd = docker_cmd
+        self.cont_cmd = cont_cmd
 
     @staticmethod
     def execute(cmd):
@@ -48,7 +48,7 @@ class BaseRunner(object):
     def current_config_ids(self):
         # List all config_id labels for managed containers
         cmd = [
-            self.docker_cmd, 'ps', '-a',
+            self.cont_cmd, 'ps', '-a',
             '--filter', 'label=managed_by=%s' % self.managed_by,
             '--format', '{{.Label "config_id"}}'
         ]
@@ -59,7 +59,7 @@ class BaseRunner(object):
 
     def containers_in_config(self, conf_id):
         cmd = [
-            self.docker_cmd, 'ps', '-q', '-a',
+            self.cont_cmd, 'ps', '-q', '-a',
             '--filter', 'label=managed_by=%s' % self.managed_by,
             '--filter', 'label=config_id=%s' % conf_id
         ]
@@ -70,7 +70,7 @@ class BaseRunner(object):
         return [c for c in cmd_stdout.split()]
 
     def inspect(self, name, format=None, type='container'):
-        cmd = [self.docker_cmd, 'inspect', '--type', type]
+        cmd = [self.cont_cmd, 'inspect', '--type', type]
         if format:
             cmd.append('--format')
             cmd.append(format)
@@ -84,7 +84,7 @@ class BaseRunner(object):
             else:
                 return json.loads(cmd_stdout)[0]
         except Exception as e:
-            LOG.error('Problem parsing docker inspect: %s' % e)
+            LOG.error('Problem parsing %s inspect: %s' % (e, self.cont_cmd))
 
     def unique_container_name(self, container):
         container_name = container
@@ -96,7 +96,7 @@ class BaseRunner(object):
 
     def discover_container_name(self, container, cid):
         cmd = [
-            self.docker_cmd,
+            self.cont_cmd,
             'ps',
             '-a',
             '--filter',
@@ -133,7 +133,7 @@ class BaseRunner(object):
     def container_names(self, conf_id=None):
         # list every container name, and its container_name label
         cmd = [
-            self.docker_cmd, 'ps', '-a',
+            self.cont_cmd, 'ps', '-a',
             '--filter', 'label=managed_by=%s' % self.managed_by
         ]
         if conf_id:
@@ -155,9 +155,9 @@ class BaseRunner(object):
             self.remove_container(container)
 
     def remove_container(self, container):
-        if self.docker_cmd == 'podman':
+        if self.cont_cmd == 'podman':
             systemd.service_delete(container)
-        cmd = [self.docker_cmd, 'rm', '-f', container]
+        cmd = [self.cont_cmd, 'rm', '-f', container]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
         if returncode != 0:
             LOG.error('Error removing container: %s' % container)
@@ -191,12 +191,12 @@ class BaseRunner(object):
 
 class DockerRunner(BaseRunner):
 
-    def __init__(self, managed_by, docker_cmd=None):
-        docker_cmd = docker_cmd or 'docker'
-        super(DockerRunner, self).__init__(managed_by, docker_cmd)
+    def __init__(self, managed_by, cont_cmd=None):
+        cont_cmd = cont_cmd or 'docker'
+        super(DockerRunner, self).__init__(managed_by, cont_cmd)
 
     def rename_container(self, container, name):
-        cmd = [self.docker_cmd, 'rename', container, name]
+        cmd = [self.cont_cmd, 'rename', container, name]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
         if returncode != 0:
             LOG.error('Error renaming container: %s' % container)
@@ -205,9 +205,9 @@ class DockerRunner(BaseRunner):
 
 class PodmanRunner(BaseRunner):
 
-    def __init__(self, managed_by, docker_cmd=None):
-        docker_cmd = docker_cmd or 'podman'
-        super(PodmanRunner, self).__init__(managed_by, docker_cmd)
+    def __init__(self, managed_by, cont_cmd=None):
+        cont_cmd = cont_cmd or 'podman'
+        super(PodmanRunner, self).__init__(managed_by, cont_cmd)
 
     def rename_container(self, container, name):
         # TODO(emilien) podman doesn't support rename, we'll handle it

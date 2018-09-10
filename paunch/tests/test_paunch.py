@@ -24,7 +24,7 @@ class TestPaunch(base.TestCase):
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
     def test_apply(self, runner, builder):
         paunch.apply('foo', {'bar': 'baz'}, 'tester')
-        runner.assert_called_once_with('tester', docker_cmd=None)
+        runner.assert_called_once_with('tester', cont_cmd=None)
         builder.assert_called_once_with(
             config_id='foo',
             config={'bar': 'baz'},
@@ -42,7 +42,7 @@ class TestPaunch(base.TestCase):
             managed_by='tester',
             labels={'bink': 'boop'})
 
-        runner.assert_called_once_with('tester', docker_cmd=None)
+        runner.assert_called_once_with('tester', cont_cmd=None)
         builder.assert_called_once_with(
             config_id='foo',
             config={'bar': 'baz'},
@@ -54,7 +54,7 @@ class TestPaunch(base.TestCase):
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
     def test_cleanup(self, runner):
         paunch.cleanup(['foo', 'bar'], 'tester')
-        runner.assert_called_once_with('tester', docker_cmd=None)
+        runner.assert_called_once_with('tester', cont_cmd=None)
         runner.return_value.delete_missing_configs.assert_called_once_with(
             ['foo', 'bar'])
         runner.return_value.rename_containers.assert_called_once_with()
@@ -62,13 +62,13 @@ class TestPaunch(base.TestCase):
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
     def test_list(self, runner):
         paunch.list('tester')
-        runner.assert_called_once_with('tester', docker_cmd=None)
+        runner.assert_called_once_with('tester', cont_cmd=None)
         runner.return_value.list_configs.assert_called_once_with()
 
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
     def test_delete(self, runner):
         paunch.delete(['foo', 'bar'], 'tester')
-        runner.assert_called_once_with('tester', docker_cmd=None)
+        runner.assert_called_once_with('tester', cont_cmd=None)
         runner.return_value.remove_containers.assert_has_calls([
             mock.call('foo'), mock.call('bar')
         ])
@@ -77,11 +77,11 @@ class TestPaunch(base.TestCase):
     @mock.patch('paunch.runner.DockerRunner')
     def test_debug(self, runner, builder):
         paunch.debug('foo', 'testcont', 'run', {'bar': 'baz'}, 'tester',
-                     docker_cmd='docker')
+                     cont_cmd='docker')
         builder.assert_called_once_with(
             config_id='foo',
             config={'bar': 'baz'},
             runner=runner.return_value,
             labels=None
         )
-        runner.assert_called_once_with('tester', docker_cmd='docker')
+        runner.assert_called_once_with('tester', cont_cmd='docker')

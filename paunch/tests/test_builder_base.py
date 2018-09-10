@@ -52,7 +52,7 @@ class TestBaseBuilder(base.TestCase):
             }
         }
 
-        r = runner.DockerRunner(managed_by='tester', docker_cmd='docker')
+        r = runner.DockerRunner(managed_by='tester', cont_cmd='docker')
         exe = mock.Mock()
         exe.side_effect = [
             ('exists', '', 0),  # inspect for image centos:6
@@ -200,7 +200,7 @@ class TestBaseBuilder(base.TestCase):
             }
         }
 
-        r = runner.DockerRunner(managed_by='tester', docker_cmd='docker')
+        r = runner.DockerRunner(managed_by='tester', cont_cmd='docker')
         exe = mock.Mock()
         exe.side_effect = [
             # inspect for image centos:7
@@ -343,7 +343,7 @@ three-12345678 three''', '', 0),
             }
         }
 
-        r = runner.DockerRunner(managed_by='tester', docker_cmd='docker')
+        r = runner.DockerRunner(managed_by='tester', cont_cmd='docker')
         exe = mock.Mock()
         exe.side_effect = [
             ('exists', '', 0),  # inspect for image centos:6
@@ -481,7 +481,7 @@ three-12345678 three''', '', 0),
         )
 
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
-    def test_docker_exec_args(self, runner):
+    def test_cont_exec_args(self, runner):
         r = runner.return_value
         r.discover_container_name.return_value = 'one-12345678'
         config = {
@@ -495,7 +495,7 @@ three-12345678 three''', '', 0),
             'foo', config, runner.return_value)
 
         cmd = ['docker', 'exec']
-        self.builder.docker_exec_args(cmd, 'one')
+        self.builder.cont_exec_args(cmd, 'one')
         self.assertEqual(
             ['docker', 'exec',
              '--privileged=true', '--user=bar',

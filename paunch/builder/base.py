@@ -53,7 +53,7 @@ class BaseBuilder(object):
             exit_codes = cconfig.get('exit_codes', [0])
             container_name = self.runner.unique_container_name(container)
             systemd_managed = (restart != 'none'
-                               and self.runner.docker_cmd == 'podman'
+                               and self.runner.cont_cmd == 'podman'
                                and action == 'run')
             start_cmd = 'create' if systemd_managed else 'run'
 
@@ -63,7 +63,7 @@ class BaseBuilder(object):
                     continue
 
                 cmd = [
-                    self.runner.docker_cmd,
+                    self.runner.cont_cmd,
                     start_cmd,
                     '--name',
                     container_name
@@ -71,8 +71,8 @@ class BaseBuilder(object):
                 self.label_arguments(cmd, container)
                 self.container_run_args(cmd, container)
             elif action == 'exec':
-                cmd = [self.runner.docker_cmd, 'exec']
-                self.docker_exec_args(cmd, container)
+                cmd = [self.runner.cont_cmd, 'exec']
+                self.cont_exec_args(cmd, container)
 
             (cmd_stdout, cmd_stderr, returncode) = self.runner.execute(cmd)
             if cmd_stdout:
@@ -172,7 +172,7 @@ class BaseBuilder(object):
             if v:
                 cmd.append('%s=%s' % (arg, v))
 
-    def docker_exec_args(self, cmd, container):
+    def cont_exec_args(self, cmd, container):
         cconfig = self.config[container]
         if 'privileged' in cconfig:
             cmd.append('--privileged=%s' % str(cconfig['privileged']).lower())
@@ -229,7 +229,7 @@ class BaseBuilder(object):
         stop=tenacity.stop_after_attempt(4)
     )
     def _pull(self, image):
-        cmd = [self.runner.docker_cmd, 'pull', image]
+        cmd = [self.runner.cont_cmd, 'pull', image]
         (stdout, stderr, rc) = self.runner.execute(cmd)
         if rc != 0:
             raise PullException(stdout, stderr, rc)

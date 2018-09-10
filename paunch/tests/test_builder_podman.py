@@ -17,7 +17,7 @@ from paunch.tests import test_builder_base as base
 
 
 class TestPodmanBuilder(base.TestBaseBuilder):
-    def test_docker_run_args(self):
+    def test_cont_run_args(self):
         config = {
             'one': {
                 'image': 'centos:7',
