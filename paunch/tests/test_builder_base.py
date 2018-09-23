@@ -457,7 +457,9 @@ three-12345678 three''', '', 0),
                 'ulimit': ['nofile=1024', 'nproc=1024'],
                 'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
                 'volumes_from': ['two', 'three'],
-                'group_add': ['docker', 'zuul']
+                'group_add': ['docker', 'zuul'],
+                'cap_add': ['SYS_ADMIN', 'SETUID'],
+                'cap_drop': ['NET_RAW']
             }
         }
         builder = compose1.ComposeV1Builder('foo', config, None)
@@ -473,6 +475,7 @@ three-12345678 three''', '', 0),
              '--group-add=docker', '--group-add=zuul',
              '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
              '--volumes-from=two', '--volumes-from=three',
+             '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
              'centos:7', 'ls', '-l', '/foo'],
             cmd
         )

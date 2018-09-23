@@ -37,7 +37,9 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
                 'env_file': '/tmp/foo.env',
                 'log_tag': '{{.ImageName}}/{{.Name}}/{{.ID}}',
                 'cpu_shares': 600,
-                'security_opt': 'label:disable'
+                'security_opt': 'label:disable',
+                'cap_add': ['SYS_ADMIN', 'SETUID'],
+                'cap_drop': ['NET_RAW']
             }
         }
         builder = compose1.ComposeV1Builder('foo', config, None)
@@ -53,6 +55,8 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
              '--privileged=true', '--restart=always', '--user=bar',
              '--log-opt=tag={{.ImageName}}/{{.Name}}/{{.ID}}',
              '--cpu-shares=600',
-             '--security-opt=label:disable', 'centos:7'],
+             '--security-opt=label:disable',
+             '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
+             'centos:7'],
             cmd
         )

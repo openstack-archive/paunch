@@ -73,8 +73,10 @@ class ComposeV1Builder(base.BaseBuilder):
                         'stop_grace_period', '--stop-timeout',
                         self.duration)
 
+        self.list_arg(cconfig, cmd, 'cap_add', '--cap-add')
+        self.list_arg(cconfig, cmd, 'cap_drop', '--cap-drop')
+
         # TODO(sbaker): add missing compose v1 properties:
-        # cap_add, cap_drop
         # cgroup_parent
         # devices
         # dns, dns_search
