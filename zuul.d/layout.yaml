@@ -3,6 +3,6 @@
       - tripleo-multinode-container-minimal
       - openstack-python35-jobs
       - check-requirements
-      - publish-openstack-sphinx-docs
+      - publish-openstack-docs-pti
       - openstack-python-jobs
-      - release-notes-jobs
+      - release-notes-jobs-python3
