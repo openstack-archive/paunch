@@ -62,5 +62,8 @@ class PodmanBuilder(base.BaseBuilder):
                         'stop_grace_period', '--stop-timeout',
                         self.duration)
 
+        self.list_arg(cconfig, cmd, 'cap_add', '--cap-add')
+        self.list_arg(cconfig, cmd, 'cap_drop', '--cap-drop')
+
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))
