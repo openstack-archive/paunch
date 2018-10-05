@@ -169,6 +169,14 @@ class BaseRunner(object):
             self.log.error('Error removing container: %s' % container)
             self.log.error(cmd_stderr)
 
+    def stop_container(self, container, cont_cmd=None):
+        cont_cmd = cont_cmd or self.cont_cmd
+        cmd = [cont_cmd, 'stop', container]
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        if returncode != 0:
+            self.log.error('Error stopping container: %s' % container)
+            self.log.error(cmd_stderr)
+
     def rename_containers(self):
         current_containers = []
         need_renaming = {}

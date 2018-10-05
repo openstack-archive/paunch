@@ -213,6 +213,24 @@ class TestBaseRunner(base.TestCase):
         )
 
     @mock.patch('subprocess.Popen')
+    def test_stop_container(self, popen):
+        self.mock_execute(popen, '', '', 0)
+
+        self.runner.stop_container('one')
+        self.assert_execute(
+            popen, ['docker', 'stop', 'one']
+        )
+
+    @mock.patch('subprocess.Popen')
+    def test_stop_container_override(self, popen):
+        self.mock_execute(popen, '', '', 0)
+
+        self.runner.stop_container('one', 'podman')
+        self.assert_execute(
+            popen, ['podman', 'stop', 'one']
+        )
+
+    @mock.patch('subprocess.Popen')
     def test_container_names(self, popen):
         ps_result = '''one one
 two-12345678 two

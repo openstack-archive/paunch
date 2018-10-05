@@ -11,8 +11,10 @@
 #   under the License.
 #
 
+import distutils.spawn
 import json
 import re
+import shutil
 import tenacity
 
 from paunch.utils import common
@@ -56,6 +58,13 @@ class BaseBuilder(object):
                                and self.runner.cont_cmd == 'podman'
                                and action == 'run')
             start_cmd = 'create' if systemd_managed else 'run'
+
+            # When upgrading from Docker to Podman, we want to stop the
+            # container that runs under Docker first before starting it with
+            # Podman. The container will be removed later in THT during
+            # upgrade_tasks.
+            if self.runner.cont_cmd == 'podman' and self.which('docker'):
+                self.runner.stop_container(container, 'docker')
 
             if action == 'run':
                 if container in desired_names:
@@ -250,6 +259,13 @@ class BaseBuilder(object):
 
     def lower(self, a):
         return str(a).lower()
+
+    def which(self, program):
+        try:
+            pgm = shutil.which(program)
+        except AttributeError:
+            pgm = distutils.spawn.find_executable(program)
+        return pgm
 
     def duration(self, a):
         if isinstance(a, (int, float)):
