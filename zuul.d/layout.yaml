@@ -7,3 +7,10 @@
       - publish-openstack-docs-pti
       - openstack-python-jobs
       - release-notes-jobs-python3
+    check:
+      jobs:
+        - tripleo-ci-centos-7-containerized-undercloud-upgrades
+    gate:
+      queue: tripleo
+      jobs:
+        - tripleo-ci-centos-7-containerized-undercloud-upgrades
