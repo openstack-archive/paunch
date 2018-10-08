@@ -54,7 +54,7 @@ def service_create(container, cconfig, sysdir='/etc/systemd/system/'):
         'stop_grace_period': stop_grace_period,
     }
     with open(sysd_unit_f, 'w') as unit_file:
-        os.chmod(unit_file.name, 0o700)
+        os.chmod(unit_file.name, 0o644)
         unit_file.write("""[Unit]
 Description=%(name)s container
 After=paunch-container-shutdown.service
