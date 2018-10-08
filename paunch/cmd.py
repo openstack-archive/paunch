@@ -63,6 +63,7 @@ class Apply(command.Command):
             '--default-runtime',
             dest='default_runtime',
             default='docker',
+            choices=['docker', 'podman'],
             help=('Default runtime for containers. Can be docker or podman.'),
         )
         return parser
@@ -88,7 +89,7 @@ class Apply(command.Command):
             config,
             managed_by='paunch',
             labels=labels,
-            default_runtime=parsed_args.default_runtime,
+            cont_cmd=parsed_args.default_runtime,
             log_level=log_level,
             log_file=log_file
         )
@@ -116,6 +117,13 @@ class Cleanup(command.Command):
             default='paunch',
             help=('Override the name of the tool managing the containers'),
         )
+        parser.add_argument(
+            '--default-runtime',
+            dest='default_runtime',
+            default='docker',
+            choices=['docker', 'podman'],
+            help=('Default runtime for containers. Can be docker or podman.'),
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -128,6 +136,7 @@ class Cleanup(command.Command):
         paunch.cleanup(
             parsed_args.config_id,
             managed_by=parsed_args.managed_by,
+            cont_cmd=parsed_args.default_runtime,
             log_level=log_level,
             log_file=log_file
         )
@@ -152,6 +161,13 @@ class Delete(command.Command):
             default='paunch',
             help=('Override the name of the tool managing the containers'),
         )
+        parser.add_argument(
+            '--default-runtime',
+            dest='default_runtime',
+            default='docker',
+            choices=['docker', 'podman'],
+            help=('Default runtime for containers. Can be docker or podman.'),
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -164,6 +180,7 @@ class Delete(command.Command):
         paunch.delete(
             parsed_args.config_id,
             parsed_args.managed_by,
+            cont_cmd=parsed_args.default_runtime,
             log_level=log_level,
             log_file=log_file
         )
@@ -250,6 +267,13 @@ class Debug(command.Command):
             default='debug',
             help=('ID to assign to containers')
         )
+        parser.add_argument(
+            '--default-runtime',
+            dest='default_runtime',
+            default='docker',
+            choices=['docker', 'podman'],
+            help=('Default runtime for containers. Can be docker or podman.'),
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -302,6 +326,7 @@ class Debug(command.Command):
             cconfig,
             parsed_args.managed_by,
             labels=labels,
+            cont_cmd=parsed_args.default_runtime,
             log_level=log_level,
             log_file=log_file
         )
@@ -320,6 +345,13 @@ class List(lister.Lister):
             default='paunch',
             help=('Override the name of the tool managing the containers'),
         )
+        parser.add_argument(
+            '--default-runtime',
+            dest='default_runtime',
+            default='docker',
+            choices=['docker', 'podman'],
+            help=('Default runtime for containers. Can be docker or podman.'),
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -331,6 +363,7 @@ class List(lister.Lister):
             __name__, log_level, log_file)
         configs = paunch.list(
             parsed_args.managed_by,
+            cont_cmd=parsed_args.default_runtime,
             log_level=log_level,
             log_file=log_file
         )
