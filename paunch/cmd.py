@@ -38,8 +38,9 @@ class Apply(command.Command):
             metavar='<label=value>',
             dest='labels',
             default=[],
+            action='append',
             help=('Extra labels to apply to containers in this config, in the '
-                  'form label=value.'),
+                  'form --label label=value --label label2=value2.'),
         )
         parser.add_argument(
             '--managed-by',
@@ -179,8 +180,9 @@ class Debug(command.Command):
             metavar='<label=value>',
             dest='labels',
             default=[],
+            action='append',
             help=('Extra labels to apply to containers in this config, in the '
-                  'form label=value.')
+                  'form --label label=value --label label2=value2.'),
         )
         parser.add_argument(
             '--managed-by',

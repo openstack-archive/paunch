@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed ``--labels`` can takes multiple values.
