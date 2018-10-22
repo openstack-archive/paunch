@@ -13,14 +13,14 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import logging
 import os
 import subprocess
 
-LOG = logging.getLogger(__name__)
+from paunch.utils import common
 
 
-def service_create(container, cconfig, sysdir='/etc/systemd/system/'):
+def service_create(container, cconfig, sysdir='/etc/systemd/system/',
+                   log=None):
     """Create a service in systemd
 
     :param container: container name
@@ -31,7 +31,11 @@ def service_create(container, cconfig, sysdir='/etc/systemd/system/'):
 
     :param sysdir: systemd unit files directory
     :type sysdir: string
+
+    :param log: optional pre-defined logger for messages
+    :type log: logging.RootLogger
     """
+    log = log or common.configure_logging(__name__)
 
     wants = " ".join(str(x) + '.service' for x in
                               cconfig.get('depends_on', []))
@@ -46,7 +50,7 @@ def service_create(container, cconfig, sysdir='/etc/systemd/system/'):
         restart = 'always'
 
     sysd_unit_f = sysdir + container + '.service'
-    LOG.debug('Creating systemd unit file: %s' % sysd_unit_f)
+    log.debug('Creating systemd unit file: %s' % sysd_unit_f)
     s_config = {
         'name': container,
         'wants': wants,
@@ -70,20 +74,24 @@ WantedBy=multi-user.target""" % s_config)
     subprocess.call(['systemctl', 'daemon-reload'])
 
 
-def service_delete(container):
+def service_delete(container, log=None):
     """Delete a service in systemd
 
     :param container: container name
     :type container: String
+
+    :param log: optional pre-defined logger for messages
+    :type log: logging.RootLogger
     """
+    log = log or common.configure_logging(__name__)
 
     sysd_unit_f = '/etc/systemd/system/' + container + '.service'
     if os.path.isfile(sysd_unit_f):
-        LOG.debug('Stopping and disabling systemd service for %s' % container)
+        log.debug('Stopping and disabling systemd service for %s' % container)
         subprocess.call(['systemctl', 'stop', container])
         subprocess.call(['systemctl', 'disable', container])
-        LOG.debug('Removing systemd unit file %s' % sysd_unit_f)
+        log.debug('Removing systemd unit file %s' % sysd_unit_f)
         os.remove(sysd_unit_f)
         subprocess.call(['systemctl', 'daemon-reload'])
     else:
-        LOG.warning('No systemd unit file was found for %s' % container)
+        log.warning('No systemd unit file was found for %s' % container)

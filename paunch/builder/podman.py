@@ -11,18 +11,14 @@
 #   under the License.
 #
 
-import logging
-
 from paunch.builder import base
-
-LOG = logging.getLogger(__name__)
 
 
 class PodmanBuilder(base.BaseBuilder):
 
-    def __init__(self, config_id, config, runner, labels=None):
+    def __init__(self, config_id, config, runner, labels=None, log=None):
         super(PodmanBuilder, self).__init__(config_id, config, runner,
-                                            labels)
+                                            labels, log)
 
     def container_run_args(self, cmd, container):
         cconfig = self.config[container]

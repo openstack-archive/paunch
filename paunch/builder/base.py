@@ -12,22 +12,22 @@
 #
 
 import json
-import logging
 import re
 import tenacity
 
+from paunch.utils import common
 from paunch.utils import systemd
-
-LOG = logging.getLogger(__name__)
 
 
 class BaseBuilder(object):
 
-    def __init__(self, config_id, config, runner, labels):
+    def __init__(self, config_id, config, runner, labels, log=None):
         self.config_id = config_id
         self.config = config
         self.labels = labels
         self.runner = runner
+        # Leverage pre-configured logger
+        self.log = log or common.configure_logging(__name__)
 
     def apply(self):
 
@@ -46,7 +46,7 @@ class BaseBuilder(object):
         desired_names = set([cn[-1] for cn in container_names])
 
         for container in sorted(self.config, key=key_fltr):
-            LOG.debug("Running container: %s" % container)
+            self.log.debug("Running container: %s" % container)
             cconfig = self.config[container]
             action = cconfig.get('action', 'run')
             restart = cconfig.get('restart', 'none')
@@ -59,7 +59,8 @@ class BaseBuilder(object):
 
             if action == 'run':
                 if container in desired_names:
-                    LOG.debug('Skipping existing container: %s' % container)
+                    self.log.debug('Skipping existing container: %s' %
+                                   container)
                     continue
 
                 cmd = [
@@ -74,23 +75,26 @@ class BaseBuilder(object):
                 cmd = [self.runner.cont_cmd, 'exec']
                 self.cont_exec_args(cmd, container)
 
-            (cmd_stdout, cmd_stderr, returncode) = self.runner.execute(cmd)
+            (cmd_stdout, cmd_stderr, returncode) = self.runner.execute(
+                cmd, self.log)
             if cmd_stdout:
                 stdout.append(cmd_stdout)
             if cmd_stderr:
                 stderr.append(cmd_stderr)
 
             if returncode not in exit_codes:
-                LOG.error("Error running %s. [%s]\n" % (cmd, returncode))
-                LOG.error("stdout: %s" % cmd_stdout)
-                LOG.error("stderr: %s" % cmd_stderr)
+                self.log.error("Error running %s. [%s]\n" % (cmd, returncode))
+                self.log.error("stdout: %s" % cmd_stdout)
+                self.log.error("stderr: %s" % cmd_stderr)
                 deploy_status_code = returncode
             else:
-                LOG.debug('Completed $ %s' % ' '.join(cmd))
-                LOG.info("stdout: %s" % cmd_stdout)
-                LOG.info("stderr: %s" % cmd_stderr)
+                self.log.debug('Completed $ %s' % ' '.join(cmd))
+                self.log.info("stdout: %s" % cmd_stdout)
+                self.log.info("stderr: %s" % cmd_stderr)
                 if systemd_managed:
-                    systemd.service_create(container_name, cconfig)
+                    systemd.service_create(container=container_name,
+                                           cconfig=cconfig,
+                                           log=self.log)
         return stdout, stderr, deploy_status_code
 
     def delete_missing_and_updated(self):
@@ -100,15 +104,15 @@ class BaseBuilder(object):
 
             # if the desired name is not in the config, delete it
             if cn[-1] not in self.config:
-                LOG.debug("Deleting container (removed): %s" % container)
+                self.log.debug("Deleting container (removed): %s" % container)
                 self.runner.remove_container(container)
                 continue
 
             ex_data_str = self.runner.inspect(
                 container, '{{index .Config.Labels "config_data"}}')
             if not ex_data_str:
-                LOG.debug("Deleting container (no config_data): %s"
-                          % container)
+                self.log.debug("Deleting container (no config_data): %s"
+                               % container)
                 self.runner.remove_container(container)
                 continue
 
@@ -119,8 +123,8 @@ class BaseBuilder(object):
 
             new_data = self.config.get(cn[-1])
             if new_data != ex_data:
-                LOG.debug("Deleting container (changed config_data): %s"
-                          % container)
+                self.log.debug("Deleting container (changed config_data): %s"
+                               % container)
                 self.runner.remove_container(container)
 
         # deleting containers is an opportunity for renames to their
@@ -208,13 +212,14 @@ class BaseBuilder(object):
                 returncode = e.rc
                 cmd_stdout = e.stdout
                 cmd_stderr = e.stderr
-                LOG.error("Error pulling %s. [%s]\n" % (image, returncode))
-                LOG.error("stdout: %s" % e.stdout)
-                LOG.error("stderr: %s" % e.stderr)
+                self.log.error("Error pulling %s. [%s]\n" %
+                               (image, returncode))
+                self.log.error("stdout: %s" % e.stdout)
+                self.log.error("stderr: %s" % e.stderr)
             else:
-                LOG.debug('Pulled %s' % image)
-                LOG.info("stdout: %s" % cmd_stdout)
-                LOG.info("stderr: %s" % cmd_stderr)
+                self.log.debug('Pulled %s' % image)
+                self.log.info("stdout: %s" % cmd_stdout)
+                self.log.info("stderr: %s" % cmd_stderr)
 
             if cmd_stdout:
                 stdout.append(cmd_stdout)
@@ -230,7 +235,7 @@ class BaseBuilder(object):
     )
     def _pull(self, image):
         cmd = [self.runner.cont_cmd, 'pull', image]
-        (stdout, stderr, rc) = self.runner.execute(cmd)
+        (stdout, stderr, rc) = self.runner.execute(cmd, self.log)
         if rc != 0:
             raise PullException(stdout, stderr, rc)
         return stdout, stderr

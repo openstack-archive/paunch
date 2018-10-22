@@ -13,36 +13,40 @@
 
 import collections
 import json
-import logging
 import random
 import string
 import subprocess
 
+from paunch.utils import common
 from paunch.utils import systemd
-
-LOG = logging.getLogger(__name__)
 
 
 class BaseRunner(object):
-    def __init__(self, managed_by, cont_cmd):
+    def __init__(self, managed_by, cont_cmd, log=None):
         self.managed_by = managed_by
         self.cont_cmd = cont_cmd
+        # Leverage pre-configured logger
+        self.log = log or common.configure_logging(__name__)
 
     @staticmethod
-    def execute(cmd):
-        LOG.debug('$ %s' % ' '.join(cmd))
+    def execute(cmd, log=None):
+        if not log:
+            log = common.configure_logging(__name__)
+        log.debug('$ %s' % ' '.join(cmd))
         subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         cmd_stdout, cmd_stderr = subproc.communicate()
-        LOG.debug(cmd_stdout)
-        LOG.debug(cmd_stderr)
+        log.debug(cmd_stdout)
+        log.debug(cmd_stderr)
         return (cmd_stdout.decode('utf-8'),
                 cmd_stderr.decode('utf-8'),
                 subproc.returncode)
 
     @staticmethod
-    def execute_interactive(cmd):
-        LOG.debug('$ %s' % ' '.join(cmd))
+    def execute_interactive(cmd, log=None):
+        if not log:
+            log = common.configure_logging(__name__)
+        log.debug('$ %s' % ' '.join(cmd))
         return subprocess.call(cmd)
 
     def current_config_ids(self):
@@ -52,7 +56,7 @@ class BaseRunner(object):
             '--filter', 'label=managed_by=%s' % self.managed_by,
             '--format', '{{.Label "config_id"}}'
         ]
-        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
             return set()
         return set(cmd_stdout.split())
@@ -63,7 +67,7 @@ class BaseRunner(object):
             '--filter', 'label=managed_by=%s' % self.managed_by,
             '--filter', 'label=config_id=%s' % conf_id
         ]
-        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
             return []
 
@@ -75,7 +79,7 @@ class BaseRunner(object):
             cmd.append('--format')
             cmd.append(format)
         cmd.append(name)
-        (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd)
+        (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd, self.log)
         if returncode != 0:
             return
         try:
@@ -84,7 +88,8 @@ class BaseRunner(object):
             else:
                 return json.loads(cmd_stdout)[0]
         except Exception as e:
-            LOG.error('Problem parsing %s inspect: %s' % (e, self.cont_cmd))
+            self.log.error('Problem parsing %s inspect: %s' %
+                           (e, self.cont_cmd))
 
     def unique_container_name(self, container):
         container_name = container
@@ -106,7 +111,7 @@ class BaseRunner(object):
             '--format',
             '{{.Names}}'
         ]
-        (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd)
+        (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd, self.log)
         if returncode != 0:
             return container
         names = cmd_stdout.split()
@@ -120,7 +125,8 @@ class BaseRunner(object):
 
         for conf_id in self.current_config_ids():
             if conf_id not in config_ids:
-                LOG.debug('%s no longer exists, deleting containers' % conf_id)
+                self.log.debug('%s no longer exists, deleting containers' %
+                               conf_id)
                 self.remove_containers(conf_id)
 
     def list_configs(self):
@@ -143,7 +149,7 @@ class BaseRunner(object):
         cmd.extend((
             '--format', '{{.Names}} {{.Label "container_name"}}'
         ))
-        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
             return
         for line in cmd_stdout.split("\n"):
@@ -156,12 +162,12 @@ class BaseRunner(object):
 
     def remove_container(self, container):
         if self.cont_cmd == 'podman':
-            systemd.service_delete(container)
+            systemd.service_delete(container=container, log=self.log)
         cmd = [self.cont_cmd, 'rm', '-f', container]
-        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
-            LOG.error('Error removing container: %s' % container)
-            LOG.error(cmd_stderr)
+            self.log.error('Error removing container: %s' % container)
+            self.log.error(cmd_stderr)
 
     def rename_containers(self):
         current_containers = []
@@ -181,36 +187,36 @@ class BaseRunner(object):
 
         for current, desired in sorted(need_renaming.items()):
             if desired in current_containers:
-                LOG.info('Cannot rename "%s" since "%s" still exists' % (
+                self.log.info('Cannot rename "%s" since "%s" still exists' % (
                     current, desired))
             else:
-                LOG.info('Renaming "%s" to "%s"' % (current, desired))
+                self.log.info('Renaming "%s" to "%s"' % (current, desired))
                 self.rename_container(current, desired)
                 current_containers.append(desired)
 
 
 class DockerRunner(BaseRunner):
 
-    def __init__(self, managed_by, cont_cmd=None):
+    def __init__(self, managed_by, cont_cmd=None, log=None):
         cont_cmd = cont_cmd or 'docker'
-        super(DockerRunner, self).__init__(managed_by, cont_cmd)
+        super(DockerRunner, self).__init__(managed_by, cont_cmd, log)
 
     def rename_container(self, container, name):
         cmd = [self.cont_cmd, 'rename', container, name]
-        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
-            LOG.error('Error renaming container: %s' % container)
-            LOG.error(cmd_stderr)
+            self.log.error('Error renaming container: %s' % container)
+            self.log.error(cmd_stderr)
 
 
 class PodmanRunner(BaseRunner):
 
-    def __init__(self, managed_by, cont_cmd=None):
+    def __init__(self, managed_by, cont_cmd=None, log=None):
         cont_cmd = cont_cmd or 'podman'
-        super(PodmanRunner, self).__init__(managed_by, cont_cmd)
+        super(PodmanRunner, self).__init__(managed_by, cont_cmd, log)
 
     def rename_container(self, container, name):
         # TODO(emilien) podman doesn't support rename, we'll handle it
         # in paunch itself, probably.
-        LOG.warning("container renaming isn't supported by podman")
+        self.log.warning("container renaming isn't supported by podman")
         pass

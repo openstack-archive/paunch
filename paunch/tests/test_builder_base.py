@@ -94,40 +94,43 @@ class TestBaseBuilder(base.TestCase):
             # inspect existing image centos:6
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:6']
+                 '--format', 'exists', 'centos:6'], mock.ANY
             ),
             # inspect and pull missing image centos:7
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7']
+                 '--format', 'exists', 'centos:7'], mock.ANY
             ),
             # first pull attempt fails
             mock.call(
-                ['docker', 'pull', 'centos:7']
+                ['docker', 'pull', 'centos:7'], mock.ANY
             ),
             # second pull attempt succeeds
             mock.call(
-                ['docker', 'pull', 'centos:7']
+                ['docker', 'pull', 'centos:7'], mock.ANY
             ),
             # ps for delete_missing_and_updated container_names
             mock.call(
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
                  '--filter', 'label=config_id=foo',
-                 '--format', '{{.Names}} {{.Label "container_name"}}']
+                 '--format', '{{.Names}} {{.Label "container_name"}}'],
+                mock.ANY
             ),
             # ps for after delete_missing_and_updated renames
             mock.call(
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
-                 '--format', '{{.Names}} {{.Label "container_name"}}']
+                 '--format', '{{.Names}} {{.Label "container_name"}}'],
+                mock.ANY
             ),
             # ps to only create containers which don't exist
             mock.call(
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
                  '--filter', 'label=config_id=foo',
-                 '--format', '{{.Names}} {{.Label "container_name"}}']
+                 '--format', '{{.Names}} {{.Label "container_name"}}'],
+                mock.ANY
             ),
             # run one
             mock.call(
@@ -136,7 +139,7 @@ class TestBaseBuilder(base.TestCase):
                  '--label', 'container_name=one',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['one']),
-                 '--detach=true', 'centos:7']
+                 '--detach=true', 'centos:7'], mock.ANY
             ),
             # run two
             mock.call(
@@ -145,7 +148,7 @@ class TestBaseBuilder(base.TestCase):
                  '--label', 'container_name=two',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['two']),
-                 '--detach=true', 'centos:7']
+                 '--detach=true', 'centos:7'], mock.ANY
             ),
             # run three
             mock.call(
@@ -154,7 +157,7 @@ class TestBaseBuilder(base.TestCase):
                  '--label', 'container_name=three',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['three']),
-                 '--detach=true', 'centos:6']
+                 '--detach=true', 'centos:6'], mock.ANY
             ),
             # run four
             mock.call(
@@ -163,11 +166,11 @@ class TestBaseBuilder(base.TestCase):
                  '--label', 'container_name=four',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['four']),
-                 '--detach=true', 'centos:7']
+                 '--detach=true', 'centos:7'], mock.ANY
             ),
             # execute within four
             mock.call(
-                ['docker', 'exec', 'four-12345678', 'ls', '-l', '/']
+                ['docker', 'exec', 'four-12345678', 'ls', '-l', '/'], mock.ANY
             ),
         ])
 
@@ -248,39 +251,42 @@ three-12345678 three''', '', 0),
             # inspect image centos:7
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7']
+                 '--format', 'exists', 'centos:7'], mock.ANY
             ),
             # ps for delete_missing_and_updated container_names
             mock.call(
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
                  '--filter', 'label=config_id=foo',
-                 '--format', '{{.Names}} {{.Label "container_name"}}']
+                 '--format', '{{.Names}} {{.Label "container_name"}}'],
+                mock.ANY
             ),
             # rm containers not in config
-            mock.call(['docker', 'rm', '-f', 'five']),
-            mock.call(['docker', 'rm', '-f', 'six']),
+            mock.call(['docker', 'rm', '-f', 'five'], mock.ANY),
+            mock.call(['docker', 'rm', '-f', 'six'], mock.ANY),
             # rm two, changed config
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',
-                       'two-12345678']),
-            mock.call(['docker', 'rm', '-f', 'two-12345678']),
+                       'two-12345678'], mock.ANY),
+            mock.call(['docker', 'rm', '-f', 'two-12345678'], mock.ANY),
             # check three, config hasn't changed
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',
-                       'three-12345678']),
+                       'three-12345678'], mock.ANY),
             # ps for after delete_missing_and_updated renames
             mock.call(
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
-                 '--format', '{{.Names}} {{.Label "container_name"}}']
+                 '--format', '{{.Names}} {{.Label "container_name"}}'],
+                mock.ANY
             ),
             # ps to only create containers which don't exist
             mock.call(
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
                  '--filter', 'label=config_id=foo',
-                 '--format', '{{.Names}} {{.Label "container_name"}}']
+                 '--format', '{{.Names}} {{.Label "container_name"}}'],
+                mock.ANY
             ),
             # run one
             mock.call(
@@ -289,7 +295,7 @@ three-12345678 three''', '', 0),
                  '--label', 'container_name=one',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['one']),
-                 '--detach=true', 'centos:7']
+                 '--detach=true', 'centos:7'], mock.ANY
             ),
             # run two
             mock.call(
@@ -298,7 +304,7 @@ three-12345678 three''', '', 0),
                  '--label', 'container_name=two',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['two']),
-                 '--detach=true', 'centos:7']
+                 '--detach=true', 'centos:7'], mock.ANY
             ),
             # don't run three, its already running
             # run four
@@ -308,11 +314,11 @@ three-12345678 three''', '', 0),
                  '--label', 'container_name=four',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['four']),
-                 '--detach=true', 'centos:7']
+                 '--detach=true', 'centos:7'], mock.ANY
             ),
             # execute within four
             mock.call(
-                ['docker', 'exec', 'four-12345678', 'ls', '-l', '/']
+                ['docker', 'exec', 'four-12345678', 'ls', '-l', '/'], mock.ANY
             ),
         ])
 
@@ -370,15 +376,15 @@ three-12345678 three''', '', 0),
             # inspect existing image centos:6
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:6']
+                 '--format', 'exists', 'centos:6'], mock.ANY
             ),
             # inspect and pull missing image centos:7
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7']
+                 '--format', 'exists', 'centos:7'], mock.ANY
             ),
             mock.call(
-                ['docker', 'pull', 'centos:7']
+                ['docker', 'pull', 'centos:7'], mock.ANY
             ),
         ])
 
