@@ -13,7 +13,9 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import logging
 import psutil
+import sys
 
 
 def get_cpus_allowed_list(**args):
@@ -30,3 +32,32 @@ def get_all_cpus(**args):
     :return: Value computed by psutil, e.g. '0-3'
     """
     return "0-" + str(psutil.cpu_count() - 1)
+
+
+def configure_logging(name, level=3, log_file=None):
+    '''Mimic oslo_log default levels and formatting for the logger. '''
+    log = logging.getLogger(name)
+
+    if level and level > 2:
+        ll = logging.DEBUG
+    elif level and level == 2:
+        ll = logging.INFO
+    else:
+        ll = logging.WARNING
+
+    log.setLevel(ll)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(ll)
+    if log_file:
+        fhandler = logging.FileHandler(log_file)
+        formatter = logging.Formatter(
+            '%(asctime)s.%(msecs)03d %(process)d %(levelname)s '
+            '%(name)s [  ] %(message)s',
+            '%Y-%m-%d %H:%M:%S')
+        fhandler.setLevel(ll)
+        fhandler.setFormatter(formatter)
+        log.addHandler(fhandler)
+        log.addHandler(handler)
+        log.propagate = False
+
+    return log

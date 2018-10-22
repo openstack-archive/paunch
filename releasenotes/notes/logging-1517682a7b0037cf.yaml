@@ -1,0 +1,5 @@
+---
+other:
+  - |
+    Logging verbosity and destination file can be controled with ``--debug``
+    ``--verbose`` and ``--log-file``.
