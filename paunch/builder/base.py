@@ -203,7 +203,9 @@ class BaseBuilder(object):
         for image in sorted(images):
 
             # only pull if the image does not exist locally
-            if self.runner.inspect(image, format='exists', type='image'):
+            if self.runner.inspect(image,
+                                   output_format='exists',
+                                   o_type='image'):
                 continue
 
             try:
