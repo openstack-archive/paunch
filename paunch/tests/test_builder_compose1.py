@@ -432,7 +432,10 @@ three-12345678 three''', '', 0),
                 'env_file': '/tmp/foo.env',
                 'log_tag': '{{.ImageName}}/{{.Name}}/{{.ID}}',
                 'cpu_shares': 600,
-                'security_opt': 'label:disable'
+                'security_opt': 'label:disable',
+                'mem_limit': '1G',
+                'memswap_limit': '1G',
+                'mem_swappiness': '60'
             }
         }
         builder = compose1.ComposeV1Builder('foo', config, None)
@@ -449,6 +452,9 @@ three-12345678 three''', '', 0),
              '--privileged=true', '--restart=always', '--user=bar',
              '--log-opt=tag={{.ImageName}}/{{.Name}}/{{.ID}}',
              '--cpu-shares=600',
+             '--memory=1G',
+             '--memory-swap=1G',
+             '--memory-swappiness=60',
              '--security-opt=label:disable', 'centos:7'],
             cmd
         )
