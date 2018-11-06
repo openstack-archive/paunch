@@ -62,6 +62,9 @@ class ComposeV1Builder(base.BaseBuilder):
         if 'log_tag' in cconfig:
             cmd.append('--log-opt=tag=%s' % cconfig['log_tag'])
         self.string_arg(cconfig, cmd, 'cpu_shares', '--cpu-shares')
+        self.string_arg(cconfig, cmd, 'mem_limit', '--memory')
+        self.string_arg(cconfig, cmd, 'memswap_limit', '--memory-swap')
+        self.string_arg(cconfig, cmd, 'mem_swappiness', '--memory-swappiness')
         self.string_arg(cconfig, cmd, 'security_opt', '--security-opt')
         self.string_arg(cconfig, cmd, 'stop_signal', '--stop-signal')
 
@@ -88,9 +91,8 @@ class ComposeV1Builder(base.BaseBuilder):
         # domainname
         # hostname
         # mac_address
-        # mem_limit
-        # memswap_limit
-        # mem_swappiness
+        # memory_reservation
+        # kernel_memory
         # read_only
         # shm_size
         # stdin_open
