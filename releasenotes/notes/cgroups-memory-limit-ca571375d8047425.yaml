@@ -1,0 +1,8 @@
+---
+features:
+  - |
+    Add `--memory=x` option for the action run a container. This allows
+    setting constraints on max memory usage, which is `memory.limit_in_bytes`
+    in memory cgroup.
+    Also added `--memory-swap` and `--memory-swappiness` options to control
+    swap settings.

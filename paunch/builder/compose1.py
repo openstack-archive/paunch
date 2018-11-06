@@ -199,6 +199,12 @@ class ComposeV1Builder(object):
                 cmd.append('--cpuset-cpus=%s' % cconfig['cpuset_cpus'])
         else:
             cmd.append('--cpuset-cpus=%s' % common.get_cpus_allowed_list())
+        if 'mem_limit' in cconfig:
+            cmd.append('--memory=%s' % cconfig['mem_limit'])
+        if 'memswap_limit' in cconfig:
+            cmd.append('--memory-swap=%s' % cconfig['memswap_limit'])
+        if 'mem_swappiness' in cconfig:
+            cmd.append('--memory-swappiness=%s' % cconfig['mem_swappiness'])
 
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))
