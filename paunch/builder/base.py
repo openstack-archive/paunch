@@ -64,7 +64,7 @@ class BaseBuilder(object):
             # Podman. The container will be removed later in THT during
             # upgrade_tasks.
             if self.runner.cont_cmd == 'podman' and self.which('docker'):
-                self.runner.stop_container(container, 'docker')
+                self.runner.stop_container(container, 'docker', quiet=True)
 
             if action == 'run':
                 if container in desired_names:

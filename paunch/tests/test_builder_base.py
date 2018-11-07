@@ -94,12 +94,12 @@ class TestBaseBuilder(base.TestCase):
             # inspect existing image centos:6
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:6'], mock.ANY
+                 '--format', 'exists', 'centos:6'], mock.ANY, False
             ),
             # inspect and pull missing image centos:7
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7'], mock.ANY
+                 '--format', 'exists', 'centos:7'], mock.ANY, False
             ),
             # first pull attempt fails
             mock.call(
@@ -251,7 +251,7 @@ three-12345678 three''', '', 0),
             # inspect image centos:7
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7'], mock.ANY
+                 '--format', 'exists', 'centos:7'], mock.ANY, False
             ),
             # ps for delete_missing_and_updated container_names
             mock.call(
@@ -267,12 +267,12 @@ three-12345678 three''', '', 0),
             # rm two, changed config
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',
-                       'two-12345678'], mock.ANY),
+                       'two-12345678'], mock.ANY, False),
             mock.call(['docker', 'rm', '-f', 'two-12345678'], mock.ANY),
             # check three, config hasn't changed
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',
-                       'three-12345678'], mock.ANY),
+                       'three-12345678'], mock.ANY, False),
             # ps for after delete_missing_and_updated renames
             mock.call(
                 ['docker', 'ps', '-a',
@@ -376,12 +376,12 @@ three-12345678 three''', '', 0),
             # inspect existing image centos:6
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:6'], mock.ANY
+                 '--format', 'exists', 'centos:6'], mock.ANY, False
             ),
             # inspect and pull missing image centos:7
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7'], mock.ANY
+                 '--format', 'exists', 'centos:7'], mock.ANY, False
             ),
             mock.call(
                 ['docker', 'pull', 'centos:7'], mock.ANY

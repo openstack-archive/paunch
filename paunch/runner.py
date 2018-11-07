@@ -29,15 +29,17 @@ class BaseRunner(object):
         self.log = log or common.configure_logging(__name__)
 
     @staticmethod
-    def execute(cmd, log=None):
+    def execute(cmd, log=None, quiet=False):
         if not log:
             log = common.configure_logging(__name__)
-        log.debug('$ %s' % ' '.join(cmd))
+        if not quiet:
+            log.debug('$ %s' % ' '.join(cmd))
         subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         cmd_stdout, cmd_stderr = subproc.communicate()
-        log.debug(cmd_stdout)
-        log.debug(cmd_stderr)
+        if not quiet:
+            log.debug(cmd_stdout)
+            log.debug(cmd_stderr)
         return (cmd_stdout.decode('utf-8'),
                 cmd_stderr.decode('utf-8'),
                 subproc.returncode)
@@ -73,13 +75,15 @@ class BaseRunner(object):
 
         return [c for c in cmd_stdout.split()]
 
-    def inspect(self, name, output_format=None, o_type='container'):
+    def inspect(self, name, output_format=None, o_type='container',
+                quiet=False):
         cmd = [self.cont_cmd, 'inspect', '--type', o_type]
         if output_format:
             cmd.append('--format')
             cmd.append(output_format)
         cmd.append(name)
-        (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd, self.log)
+        (cmd_stdout, cmd_stderr, returncode) = self.execute(
+            cmd, self.log, quiet)
         if returncode != 0:
             return
         try:
@@ -93,7 +97,7 @@ class BaseRunner(object):
 
     def unique_container_name(self, container):
         container_name = container
-        while self.inspect(container_name, output_format='exists'):
+        while self.inspect(container_name, output_format='exists', quiet=True):
             suffix = ''.join(random.choice(
                 string.ascii_lowercase + string.digits) for i in range(8))
             container_name = '%s-%s' % (container, suffix)
@@ -169,11 +173,11 @@ class BaseRunner(object):
             self.log.error('Error removing container: %s' % container)
             self.log.error(cmd_stderr)
 
-    def stop_container(self, container, cont_cmd=None):
+    def stop_container(self, container, cont_cmd=None, quiet=False):
         cont_cmd = cont_cmd or self.cont_cmd
         cmd = [cont_cmd, 'stop', container]
-        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
-        if returncode != 0:
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd, quiet=quiet)
+        if returncode != 0 and not quiet:
             self.log.error('Error stopping container: %s' % container)
             self.log.error(cmd_stderr)
 
