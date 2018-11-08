@@ -90,7 +90,7 @@ class TestBaseRunner(base.TestCase):
 
         self.assertEqual(
             "bar",
-            self.runner.inspect('one', format='{{foo}}')
+            self.runner.inspect('one', output_format='{{foo}}')
         )
         self.assert_execute(
             popen, ['docker', 'inspect', '--type', 'container',

@@ -73,17 +73,17 @@ class BaseRunner(object):
 
         return [c for c in cmd_stdout.split()]
 
-    def inspect(self, name, format=None, type='container'):
-        cmd = [self.cont_cmd, 'inspect', '--type', type]
-        if format:
+    def inspect(self, name, output_format=None, o_type='container'):
+        cmd = [self.cont_cmd, 'inspect', '--type', o_type]
+        if output_format:
             cmd.append('--format')
-            cmd.append(format)
+            cmd.append(output_format)
         cmd.append(name)
         (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd, self.log)
         if returncode != 0:
             return
         try:
-            if format:
+            if output_format:
                 return cmd_stdout
             else:
                 return json.loads(cmd_stdout)[0]
@@ -93,7 +93,7 @@ class BaseRunner(object):
 
     def unique_container_name(self, container):
         container_name = container
-        while self.inspect(container_name, format='exists'):
+        while self.inspect(container_name, output_format='exists'):
             suffix = ''.join(random.choice(
                 string.ascii_lowercase + string.digits) for i in range(8))
             container_name = '%s-%s' % (container, suffix)
