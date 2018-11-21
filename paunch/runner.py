@@ -81,8 +81,24 @@ class BaseRunner(object):
 
         return [c for c in cmd_stdout.split()]
 
+    def image_exist(self, name, quiet=False):
+        # the command only exists in podman.
+        if self.cont_cmd != 'podman':
+            self.log.warning("image_exist isn't supported "
+                             "by %s" % self.cont_cmd)
+            return 0
+        cmd = ['podman', 'image', 'exists', name]
+        (cmd_stdout, cmd_stderr, returncode) = self.execute(
+            cmd, self.log, quiet)
+        return returncode
+
     def inspect(self, name, output_format=None, o_type='container',
                 quiet=False):
+        img_exist = self.image_exist(name)
+        # We want to verify if the image exists before inspecting it.
+        # Context: https://github.com/containers/libpod/issues/1845
+        if img_exist != 0:
+            return
         cmd = [self.cont_cmd, 'inspect', '--type', o_type]
         if output_format:
             cmd.append('--format')

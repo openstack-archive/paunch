@@ -414,4 +414,13 @@ four-12345678 four
 
 
 class PodmanRunner(TestBaseRunner):
-    pass
+
+    @mock.patch('subprocess.Popen')
+    def test_image_exist(self, popen):
+        self.mock_execute(popen, '', '', 0)
+
+        self.runner = runner.PodmanRunner('tester')
+        self.runner.image_exist('one')
+        self.assert_execute(
+            popen, ['podman', 'image', 'exists', 'one']
+        )
