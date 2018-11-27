@@ -63,6 +63,7 @@ class PodmanBuilder(base.BaseBuilder):
 
         self.list_arg(cconfig, cmd, 'cap_add', '--cap-add')
         self.list_arg(cconfig, cmd, 'cap_drop', '--cap-drop')
+        self.string_arg(cconfig, cmd, 'check_interval', '--check-interval')
 
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))

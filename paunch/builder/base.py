@@ -104,6 +104,13 @@ class BaseBuilder(object):
                     systemd.service_create(container=container_name,
                                            cconfig=cconfig,
                                            log=self.log)
+                    if 'healthcheck' in cconfig:
+                        systemd.healthcheck_create(container=container_name,
+                                                   log=self.log)
+                        systemd.healthcheck_timer_create(
+                            container=container_name,
+                            cconfig=cconfig,
+                            log=self.log)
         return stdout, stderr, deploy_status_code
 
     def delete_missing_and_updated(self):
