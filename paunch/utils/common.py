@@ -14,7 +14,11 @@
 # under the License.
 
 import logging
+import os
 import sys
+
+from paunch import constants
+from paunch import utils
 
 
 def configure_logging(name, level=3, log_file=None):
@@ -44,3 +48,19 @@ def configure_logging(name, level=3, log_file=None):
         log.propagate = False
 
     return log
+
+
+def configure_logging_from_args(name, app_args):
+    # takes 1, or 2 if --verbose, or 4 - 5 if --debug
+    log_level = (app_args.verbose_level +
+                 int(app_args.debug) * 3)
+
+    # if executed as root log to specified file or default log file
+    if os.getuid() == 0:
+        log_file = app_args.log_file or constants.LOG_FILE
+    else:
+        log_file = app_args.log_file
+
+    log = utils.common.configure_logging(
+        __name__, log_level, log_file)
+    return (log, log_file, log_level)

@@ -20,7 +20,6 @@ import yaml
 
 import paunch
 
-from paunch import constants
 from paunch import utils
 
 
@@ -68,13 +67,8 @@ class Apply(command.Command):
         return parser
 
     def take_action(self, parsed_args):
-
-        # takes 1, or 2 if --verbose, or 4 - 5 if --debug
-        log_level = (self.app_args.verbose_level +
-                     int(self.app_args.debug) * 3)
-        log_file = self.app_args.log_file or constants.LOG_FILE
-        self.log = utils.common.configure_logging(
-            __name__, log_level, log_file)
+        (self.log, log_file, log_level) = \
+            utils.common.configure_logging_from_args(__name__, self.app_args)
         labels = collections.OrderedDict()
         for l in parsed_args.labels:
             k, v = l.split(('='), 1)
@@ -119,12 +113,8 @@ class Cleanup(command.Command):
         return parser
 
     def take_action(self, parsed_args):
-        # takes 1, or 2 if --verbose, or 4 - 5 if --debug
-        log_level = (self.app_args.verbose_level +
-                     int(self.app_args.debug) * 3)
-        log_file = self.app_args.log_file or constants.LOG_FILE
-        self.log = utils.common.configure_logging(
-            __name__, log_level, log_file)
+        (self.log, log_file, log_level) = \
+            utils.common.configure_logging_from_args(__name__, self.app_args)
         paunch.cleanup(
             parsed_args.config_id,
             managed_by=parsed_args.managed_by,
@@ -155,12 +145,8 @@ class Delete(command.Command):
         return parser
 
     def take_action(self, parsed_args):
-        # takes 1, or 2 if --verbose, or 4 - 5 if --debug
-        log_level = (self.app_args.verbose_level +
-                     int(self.app_args.debug) * 3)
-        log_file = self.app_args.log_file or constants.LOG_FILE
-        self.log = utils.common.configure_logging(
-            __name__, log_level, log_file)
+        (self.log, log_file, log_level) = \
+            utils.common.configure_logging_from_args(__name__, self.app_args)
         paunch.delete(
             parsed_args.config_id,
             parsed_args.managed_by,
@@ -253,14 +239,8 @@ class Debug(command.Command):
         return parser
 
     def take_action(self, parsed_args):
-
-        # takes 1, or 2 if --verbose, or 4 - 5 if --debug
-        log_level = (self.app_args.verbose_level +
-                     int(self.app_args.debug) * 3)
-        # Only log to a file if explicitely set via CLI args
-        log_file = self.app_args.log_file
-        self.log = utils.common.configure_logging(
-            __name__, log_level, log_file)
+        (self.log, log_file, log_level) = \
+            utils.common.configure_logging_from_args(__name__, self.app_args)
         labels = collections.OrderedDict()
         for l in parsed_args.labels:
             k, v = l.split(('='), 1)
@@ -323,12 +303,8 @@ class List(lister.Lister):
         return parser
 
     def take_action(self, parsed_args):
-        # takes 1, or 2 if --verbose, or 4 - 5 if --debug
-        log_level = (self.app_args.verbose_level +
-                     int(self.app_args.debug) * 3)
-        log_file = self.app_args.log_file or constants.LOG_FILE
-        self.log = utils.common.configure_logging(
-            __name__, log_level, log_file)
+        (self.log, log_file, log_level) = \
+            utils.common.configure_logging_from_args(__name__, self.app_args)
         configs = paunch.list(
             parsed_args.managed_by,
             log_level=log_level,
