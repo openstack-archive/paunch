@@ -93,7 +93,7 @@ class BaseRunner(object):
                 return json.loads(cmd_stdout)[0]
         except Exception as e:
             self.log.error('Problem parsing %s inspect: %s' %
-                           (e, self.cont_cmd))
+                           (self.cont_cmd, e))
 
     def unique_container_name(self, container):
         container_name = container
