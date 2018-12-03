@@ -51,6 +51,9 @@ class PodmanBuilder(base.BaseBuilder):
         if 'log_tag' in cconfig:
             cmd.append('--log-opt=tag=%s' % cconfig['log_tag'])
         self.string_arg(cconfig, cmd, 'cpu_shares', '--cpu-shares')
+        self.string_arg(cconfig, cmd, 'mem_limit', '--memory')
+        self.string_arg(cconfig, cmd, 'memswap_limit', '--memory-swap')
+        self.string_arg(cconfig, cmd, 'mem_swappiness', '--memory-swappiness')
         self.string_arg(cconfig, cmd, 'security_opt', '--security-opt')
         self.string_arg(cconfig, cmd, 'stop_signal', '--stop-signal')
 
