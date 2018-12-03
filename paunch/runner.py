@@ -12,11 +12,13 @@
 #
 
 import collections
+import jmespath
 import json
 import random
 import string
 import subprocess
 
+from paunch.builder import podman
 from paunch.utils import common
 from paunch.utils import systemd
 
@@ -157,6 +159,28 @@ class BaseRunner(object):
                                conf_id)
                 self.remove_containers(conf_id)
 
+    def discover_container_config(self, configs, container, name):
+        '''Find the paunch and runtime configs of a container by name.'''
+        for conf_id in self.current_config_ids():
+            jquerry = ("[] | [?(Name=='%s' && "
+                       "Config.Labels.container_name=='%s' && "
+                       "Config.Labels.config_id=='%s')]" %
+                       (container, name, conf_id))
+            runtime_conf = None
+            try:
+                runtime_conf = jmespath.search(jquerry,
+                                               configs[conf_id])[0]
+                result = (conf_id, runtime_conf)
+            except Exception:
+                self.log.error("Failed searching container %s "
+                               "for config %s" % (container, conf_id))
+                result = (None, None)
+            if runtime_conf:
+                self.log.debug("Found container %s "
+                               "for config %s" % (container, conf_id))
+                break
+        return result
+
     def list_configs(self):
         configs = collections.defaultdict(list)
         for conf_id in self.current_config_ids():
@@ -259,6 +283,54 @@ class PodmanRunner(BaseRunner):
 
     def rename_container(self, container, name):
         # TODO(emilien) podman doesn't support rename, we'll handle it
-        # in paunch itself, probably.
-        self.log.warning("container renaming isn't supported by podman")
-        pass
+        # in paunch itself for now
+        configs = self.list_configs()
+        config_id, config = self.discover_container_config(
+            configs, container, name)
+        # Get config_data dict by the discovered conf ID,
+        # paunch needs it for maintaining idempotency within a conf ID
+        filter_names = ("[] | [?(Name!='%s' && "
+                        "Config.Labels.config_id=='%s')]"
+                        ".Name" % (container, config_id))
+        filter_cdata = ("[] | [?(Name!='%s' && "
+                        "Config.Labels.config_id=='%s')]"
+                        ".Config.Labels.config_data" % (container, config_id))
+        names = None
+        cdata = None
+        try:
+            names = jmespath.search(filter_names, configs[config_id])
+            cdata = jmespath.search(filter_cdata, configs[config_id])
+        except jmespath.exceptions.LexerError:
+            self.log.error("Failed to rename a container %s into %s: "
+                           "used a bad search pattern" % (container, name))
+            return
+
+        if not names or not cdata:
+            self.log.error("Failed to rename a container %s into %s: "
+                           "no config_data was found" % (container, name))
+            return
+
+        # Rename the wanted container in the config_data fetched from the
+        # discovered config
+        config_data = dict(zip(names, map(json.loads, cdata)))
+        config_data[name] = json.loads(
+            config.get('Config').get('Labels').get('config_data'))
+
+        # Re-apply a container under its amended name using the fetched configs
+        self.log.debug("Renaming a container known as %s into %s, "
+                       "via re-applying its original config" %
+                       (container, name))
+        self.log.debug("Removing the destination container %s" % name)
+        self.stop_container(name)
+        self.remove_container(name)
+        self.log.debug("Removing a container known as %s" % container)
+        self.stop_container(container)
+        self.remove_container(container)
+        builder = podman.PodmanBuilder(
+            config_id=config_id,
+            config=config_data,
+            runner=self,
+            labels=None,
+            log=self.log
+        )
+        builder.apply()
