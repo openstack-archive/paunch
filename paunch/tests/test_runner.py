@@ -23,6 +23,7 @@ class TestBaseRunner(base.TestCase):
     def setUp(self):
         super(TestBaseRunner, self).setUp()
         self.runner = runner.DockerRunner('tester')
+        self.podman_runner = runner.PodmanRunner('tester')
 
     def mock_execute(self, popen, stdout, stderr, returncode):
         subproc = mock.Mock()
@@ -45,7 +46,7 @@ class TestBaseRunner(base.TestCase):
         self.assert_execute(popen, ['ls', '-l'])
 
     @mock.patch('subprocess.Popen')
-    def test_current_config_ids(self, popen):
+    def test_current_config_ids_docker(self, popen):
         self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
 
         self.assertEqual(
@@ -56,6 +57,19 @@ class TestBaseRunner(base.TestCase):
             popen, ['docker', 'ps', '-a', '--filter',
                     'label=managed_by=tester',
                     '--format', '{{.Label "config_id"}}']
+        )
+
+    @mock.patch('subprocess.Popen')
+    def test_current_config_ids_podman(self, popen):
+        self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
+        self.assertEqual(
+            set(('one', 'two', 'three')),
+            self.podman_runner.current_config_ids()
+        )
+        self.assert_execute(
+            popen, ['podman', 'ps', '-a', '--filter',
+                    'label=managed_by=tester',
+                    '--format', '{{.Labels.config_id}}']
         )
 
     @mock.patch('subprocess.Popen')
@@ -142,7 +156,7 @@ class TestBaseRunner(base.TestCase):
         )
 
     @mock.patch('subprocess.Popen')
-    def test_delete_missing_configs(self, popen):
+    def test_delete_missing_configs_docker(self, popen):
         self.mock_execute(popen, 'one\ntwo\nthree\nfour', '', 0)
         self.runner.remove_containers = mock.Mock()
 
@@ -159,7 +173,24 @@ class TestBaseRunner(base.TestCase):
         ], any_order=True)
 
     @mock.patch('subprocess.Popen')
-    def test_list_configs(self, popen):
+    def test_delete_missing_configs_podman(self, popen):
+        self.mock_execute(popen, 'one\ntwo\nthree\nfour', '', 0)
+        self.podman_runner.remove_containers = mock.Mock()
+
+        self.podman_runner.delete_missing_configs(['two', 'three'])
+        self.assert_execute(
+            popen, ['podman', 'ps', '-a', '--filter',
+                    'label=managed_by=tester',
+                    '--format', '{{.Labels.config_id}}']
+        )
+
+        # containers one and four will be deleted
+        self.podman_runner.remove_containers.assert_has_calls([
+            mock.call('one'), mock.call('four')
+        ], any_order=True)
+
+    @mock.patch('subprocess.Popen')
+    def test_list_configs_docker(self, popen):
         self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
         self.runner.inspect = mock.Mock(
             return_value={'e': 'f'})
@@ -177,6 +208,35 @@ class TestBaseRunner(base.TestCase):
             mock.call('one'), mock.call('two'), mock.call('three')
         ], any_order=True)
         self.runner.inspect.assert_has_calls([
+            mock.call('a'), mock.call('b'), mock.call('c'),
+            mock.call('a'), mock.call('b'), mock.call('c'),
+            mock.call('a'), mock.call('b'), mock.call('c')
+        ])
+        self.assertEqual({
+            'one': [{'e': 'f'}, {'e': 'f'}, {'e': 'f'}],
+            'two': [{'e': 'f'}, {'e': 'f'}, {'e': 'f'}],
+            'three': [{'e': 'f'}, {'e': 'f'}, {'e': 'f'}]
+        }, result)
+
+    @mock.patch('subprocess.Popen')
+    def test_list_configs_podman(self, popen):
+        self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
+        self.podman_runner.inspect = mock.Mock(
+            return_value={'e': 'f'})
+        self.podman_runner.containers_in_config = mock.Mock(
+            return_value=['a', 'b', 'c'])
+
+        result = self.podman_runner.list_configs()
+
+        self.assert_execute(
+            popen, ['podman', 'ps', '-a', '--filter',
+                    'label=managed_by=tester',
+                    '--format', '{{.Labels.config_id}}']
+        )
+        self.podman_runner.containers_in_config.assert_has_calls([
+            mock.call('one'), mock.call('two'), mock.call('three')
+        ], any_order=True)
+        self.podman_runner.inspect.assert_has_calls([
             mock.call('a'), mock.call('b'), mock.call('c'),
             mock.call('a'), mock.call('b'), mock.call('c'),
             mock.call('a'), mock.call('b'), mock.call('c')
@@ -231,7 +291,7 @@ class TestBaseRunner(base.TestCase):
         )
 
     @mock.patch('subprocess.Popen')
-    def test_container_names(self, popen):
+    def test_container_names_docker(self, popen):
         ps_result = '''one one
 two-12345678 two
 two two
@@ -257,7 +317,33 @@ four-12345678 four
         ], names)
 
     @mock.patch('subprocess.Popen')
-    def test_container_names_by_conf_id(self, popen):
+    def test_container_names_podman(self, popen):
+        ps_result = '''one one
+two-12345678 two
+two two
+three-12345678 three
+four-12345678 four
+'''
+
+        self.mock_execute(popen, ps_result, '', 0)
+
+        names = list(self.podman_runner.container_names())
+
+        self.assert_execute(
+            popen, ['podman', 'ps', '-a',
+                    '--filter', 'label=managed_by=tester',
+                    '--format', '{{.Names}} {{.Labels.container_name}}']
+        )
+        self.assertEqual([
+            ['one', 'one'],
+            ['two-12345678', 'two'],
+            ['two', 'two'],
+            ['three-12345678', 'three'],
+            ['four-12345678', 'four']
+        ], names)
+
+    @mock.patch('subprocess.Popen')
+    def test_container_names_by_conf_id_docker(self, popen):
         ps_result = '''one one
 two-12345678 two
 '''
@@ -271,6 +357,27 @@ two-12345678 two
                     '--filter', 'label=managed_by=tester',
                     '--filter', 'label=config_id=abc',
                     '--format', '{{.Names}} {{.Label "container_name"}}']
+        )
+        self.assertEqual([
+            ['one', 'one'],
+            ['two-12345678', 'two']
+        ], names)
+
+    @mock.patch('subprocess.Popen')
+    def test_container_names_by_conf_id_podman(self, popen):
+        ps_result = '''one one
+two-12345678 two
+'''
+
+        self.mock_execute(popen, ps_result, '', 0)
+
+        names = list(self.podman_runner.container_names('abc'))
+
+        self.assert_execute(
+            popen, ['podman', 'ps', '-a',
+                    '--filter', 'label=managed_by=tester',
+                    '--filter', 'label=config_id=abc',
+                    '--format', '{{.Names}} {{.Labels.container_name}}']
         )
         self.assertEqual([
             ['one', 'one'],

@@ -53,10 +53,16 @@ class BaseRunner(object):
 
     def current_config_ids(self):
         # List all config_id labels for managed containers
+        # FIXME(bogdando): remove once we have it fixed:
+        # https://github.com/containers/libpod/issues/1729
+        if self.cont_cmd == 'docker':
+            fmt = '{{.Label "config_id"}}'
+        else:
+            fmt = '{{.Labels.config_id}}'
         cmd = [
             self.cont_cmd, 'ps', '-a',
             '--filter', 'label=managed_by=%s' % self.managed_by,
-            '--format', '{{.Label "config_id"}}'
+            '--format', fmt
         ]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
@@ -142,6 +148,12 @@ class BaseRunner(object):
 
     def container_names(self, conf_id=None):
         # list every container name, and its container_name label
+        # FIXME(bogdando): remove once we have it fixed:
+        # https://github.com/containers/libpod/issues/1729
+        if self.cont_cmd == 'docker':
+            fmt = '{{.Label "container_name"}}'
+        else:
+            fmt = '{{.Labels.container_name}}'
         cmd = [
             self.cont_cmd, 'ps', '-a',
             '--filter', 'label=managed_by=%s' % self.managed_by
@@ -151,7 +163,7 @@ class BaseRunner(object):
                 '--filter', 'label=config_id=%s' % conf_id
             ))
         cmd.extend((
-            '--format', '{{.Names}} {{.Label "container_name"}}'
+            '--format', '{{.Names}} %s' % fmt
         ))
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
