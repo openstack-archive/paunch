@@ -14,3 +14,4 @@
 #
 
 LOG_FILE = '/var/log/paunch.log'
+SYSTEMD_DIR = '/etc/systemd/system/'

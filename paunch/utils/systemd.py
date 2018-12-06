@@ -16,10 +16,11 @@
 import os
 import subprocess
 
+from paunch import constants
 from paunch.utils import common
 
 
-def service_create(container, cconfig, sysdir='/etc/systemd/system/',
+def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR,
                    log=None):
     """Create a service in systemd
 
@@ -82,11 +83,14 @@ WantedBy=multi-user.target""" % s_config)
     subprocess.call(['systemctl', 'enable', '--now', service])
 
 
-def service_delete(container, log=None):
+def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
     """Delete a service in systemd
 
     :param container: container name
     :type container: String
+
+    :param sysdir: systemd unit files directory
+    :type sysdir: string
 
     :param log: optional pre-defined logger for messages
     :type log: logging.RootLogger
@@ -95,7 +99,7 @@ def service_delete(container, log=None):
     # prefix is explained in the service_create().
     service = 'tripleo_' + container
 
-    sysd_unit_f = '/etc/systemd/system/' + service + '.service'
+    sysd_unit_f = sysdir + service + '.service'
     if os.path.isfile(sysd_unit_f):
         log.debug('Stopping and disabling systemd service for %s' % service)
         subprocess.call(['systemctl', 'stop', service])
