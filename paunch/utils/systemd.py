@@ -36,6 +36,14 @@ def service_create(container, cconfig, sysdir='/etc/systemd/system/',
     :type log: logging.RootLogger
     """
     log = log or common.configure_logging(__name__)
+    # We prefix the SystemD service so we can identify them better:
+    # e.g. systemctl list-unit-files | grep paunch
+    # It'll help to not conflict when rpms are installed on the host and
+    # have the same service name as their container name.
+    # For example haproxy rpm and haproxy container would have the same
+    # service name so the prefix will help to not having this conflict
+    # when removing the rpms during a cleanup by the operator.
+    service = 'tripleo_' + container
 
     wants = " ".join(str(x) + '.service' for x in
                               cconfig.get('depends_on', []))
@@ -49,7 +57,7 @@ def service_create(container, cconfig, sysdir='/etc/systemd/system/',
     if restart == 'unless-stopped':
         restart = 'always'
 
-    sysd_unit_f = sysdir + container + '.service'
+    sysd_unit_f = sysdir + service + '.service'
     log.debug('Creating systemd unit file: %s' % sysd_unit_f)
     s_config = {
         'name': container,
@@ -70,7 +78,7 @@ ExecStop=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
 KillMode=process
 [Install]
 WantedBy=multi-user.target""" % s_config)
-    subprocess.call(['systemctl', 'enable', '--now', container])
+    subprocess.call(['systemctl', 'enable', '--now', service])
     subprocess.call(['systemctl', 'daemon-reload'])
 
 
@@ -84,14 +92,16 @@ def service_delete(container, log=None):
     :type log: logging.RootLogger
     """
     log = log or common.configure_logging(__name__)
+    # prefix is explained in the service_create().
+    service = 'tripleo_' + container
 
-    sysd_unit_f = '/etc/systemd/system/' + container + '.service'
+    sysd_unit_f = '/etc/systemd/system/' + service + '.service'
     if os.path.isfile(sysd_unit_f):
-        log.debug('Stopping and disabling systemd service for %s' % container)
-        subprocess.call(['systemctl', 'stop', container])
-        subprocess.call(['systemctl', 'disable', container])
+        log.debug('Stopping and disabling systemd service for %s' % service)
+        subprocess.call(['systemctl', 'stop', service])
+        subprocess.call(['systemctl', 'disable', service])
         log.debug('Removing systemd unit file %s' % sysd_unit_f)
         os.remove(sysd_unit_f)
         subprocess.call(['systemctl', 'daemon-reload'])
     else:
-        log.warning('No systemd unit file was found for %s' % container)
+        log.warning('No systemd unit file was found for %s' % service)

@@ -27,12 +27,13 @@ class TestUtilsSystemd(base.TestCase):
     @mock.patch('os.chmod')
     def test_service_create(self, mock_chmod, mock_subprocess_call):
         container = 'my_app'
+        service = 'tripleo_' + container
         cconfig = {'depends_on': ['something'], 'restart': 'unless-stopped',
                    'stop_grace_period': '15'}
         tempdir = tempfile.mkdtemp()
         systemd.service_create(container, cconfig, tempdir)
 
-        sysd_unit_f = tempdir + container + '.service'
+        sysd_unit_f = tempdir + service + '.service'
         unit = open(sysd_unit_f, 'rt').read()
         self.assertIn('Wants=something.service', unit)
         self.assertIn('Restart=always', unit)
@@ -40,7 +41,7 @@ class TestUtilsSystemd(base.TestCase):
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
 
         mock_subprocess_call.assert_has_calls([
-            mock.call(['systemctl', 'enable', '--now', container]),
+            mock.call(['systemctl', 'enable', '--now', service]),
             mock.call(['systemctl', 'daemon-reload']),
         ])
 
@@ -52,9 +53,10 @@ class TestUtilsSystemd(base.TestCase):
     def test_service_delete(self, mock_subprocess_call, mock_isfile, mock_rm):
         mock_isfile.return_value = True
         container = 'my_app'
+        service = 'tripleo_' + container
         systemd.service_delete(container)
         mock_subprocess_call.assert_has_calls([
-            mock.call(['systemctl', 'stop', container]),
-            mock.call(['systemctl', 'disable', container]),
+            mock.call(['systemctl', 'stop', service]),
+            mock.call(['systemctl', 'disable', service]),
             mock.call(['systemctl', 'daemon-reload']),
         ])
