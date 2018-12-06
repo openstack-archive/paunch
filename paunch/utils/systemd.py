@@ -78,8 +78,8 @@ ExecStop=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
 KillMode=process
 [Install]
 WantedBy=multi-user.target""" % s_config)
-    subprocess.call(['systemctl', 'enable', '--now', service])
     subprocess.call(['systemctl', 'daemon-reload'])
+    subprocess.call(['systemctl', 'enable', '--now', service])
 
 
 def service_delete(container, log=None):

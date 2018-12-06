@@ -41,8 +41,8 @@ class TestUtilsSystemd(base.TestCase):
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
 
         mock_subprocess_call.assert_has_calls([
-            mock.call(['systemctl', 'enable', '--now', service]),
             mock.call(['systemctl', 'daemon-reload']),
+            mock.call(['systemctl', 'enable', '--now', service]),
         ])
 
         os.rmdir(tempdir)
