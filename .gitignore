@@ -48,6 +48,7 @@ doc/build
 # pbr generates these
 AUTHORS
 ChangeLog
+RELEASENOTES.rst
 
 # Editors
 *~
@@ -56,3 +57,4 @@ ChangeLog
 
 # Files created by releasenotes build
 releasenotes/build
+releasenotes/notes/reno.cache
