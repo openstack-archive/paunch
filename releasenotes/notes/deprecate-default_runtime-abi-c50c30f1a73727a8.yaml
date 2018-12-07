@@ -1,0 +1,5 @@
+---
+deprecations:
+  - |
+    The `default_runtime` ABI parameter is deprecated, use cont_cmd instead.
+    The default-runtime CLI argument retains unchanged.
