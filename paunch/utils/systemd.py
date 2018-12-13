@@ -31,7 +31,7 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR,
     :type cconfig: Dictionary
 
     :param sysdir: systemd unit files directory
-    :type sysdir: string
+    :type sysdir: String
 
     :param log: optional pre-defined logger for messages
     :type log: logging.RootLogger
@@ -109,3 +109,84 @@ def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
         subprocess.call(['systemctl', 'daemon-reload'])
     else:
         log.warning('No systemd unit file was found for %s' % service)
+
+
+def healthcheck_create(container, sysdir='/etc/systemd/system/', log=None):
+    """Create a healthcheck for a service in systemd
+
+    :param container: container name
+    :type container: String
+
+    :param sysdir: systemd unit files directory
+    :type sysdir: String
+
+    :param log: optional pre-defined logger for messages
+    :type log: logging.RootLogger
+    """
+
+    log = log or common.configure_logging(__name__)
+
+    service = 'tripleo_' + container
+    healthcheck = service + '_healthcheck.service'
+    sysd_unit_f = sysdir + healthcheck
+    log.debug('Creating systemd unit file: %s' % sysd_unit_f)
+    s_config = {
+        'name': container,
+        'restart': 'restart',
+    }
+    with open(sysd_unit_f, 'w') as unit_file:
+        os.chmod(unit_file.name, 0o644)
+        unit_file.write("""[Unit]
+Description=%(name)s healthcheck
+After=paunch-container-shutdown.service
+Requisite=%(name)s.service
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/podman exec %(name)s /openstack/healthcheck
+[Install]
+WantedBy=multi-user.target
+""" % s_config)
+    subprocess.call(['systemctl', 'enable', '--now', healthcheck])
+    subprocess.call(['systemctl', 'daemon-reload'])
+
+
+def healthcheck_timer_create(container, cconfig, sysdir='/etc/systemd/system/',
+                             log=None):
+    """Create a systemd timer for a healthcheck
+
+    :param container: container name
+    :type container: String
+
+    :param cconfig: container configuration
+    :type cconfig: Dictionary
+
+    :param sysdir: systemd unit files directory
+    :type sysdir: string
+
+    :param log: optional pre-defined logger for messages
+    :type log: logging.RootLogger
+    """
+
+    log = log or common.configure_logging(__name__)
+
+    service = 'tripleo_' + container
+    healthcheck_timer = service + '_healthcheck.timer'
+    sysd_timer_f = sysdir + healthcheck_timer
+    log.debug('Creating systemd timer file: %s' % sysd_timer_f)
+    interval = cconfig.get('check_interval', 30)
+    s_config = {
+        'name': container,
+        'interval': interval
+    }
+    with open(sysd_timer_f, 'w') as timer_file:
+        os.chmod(timer_file.name, 0o644)
+        timer_file.write("""[Unit]
+Description=%(name)s container healthcheck
+Requires=%(name)s_healthcheck.service
+[Timer]
+OnUnitActiveSec=90
+OnCalendar=*-*-* *:*:00/%(interval)s
+[Install]
+WantedBy=timers.target""" % s_config)
+    subprocess.call(['systemctl', 'enable', '--now', healthcheck_timer])
+    subprocess.call(['systemctl', 'daemon-reload'])

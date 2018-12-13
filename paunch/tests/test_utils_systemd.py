@@ -60,3 +60,45 @@ class TestUtilsSystemd(base.TestCase):
             mock.call(['systemctl', 'disable', service]),
             mock.call(['systemctl', 'daemon-reload']),
         ])
+
+    @mock.patch('subprocess.call', autospec=True)
+    @mock.patch('os.chmod')
+    def test_healthcheck_create(self, mock_chmod, mock_subprocess_call):
+        container = 'my_app'
+        service = 'tripleo_' + container
+        tempdir = tempfile.mkdtemp()
+        healthcheck = service + '_healthcheck.service'
+        sysd_unit_f = tempdir + healthcheck
+
+        systemd.healthcheck_create(container, tempdir)
+        unit = open(sysd_unit_f, 'rt').read()
+
+        self.assertIn('ExecStart=/usr/bin/podman exec my_app '
+                      '/openstack/healthcheck', unit)
+        mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
+        mock_subprocess_call.assert_has_calls([
+            mock.call(['systemctl', 'enable', '--now',
+                       healthcheck]),
+            mock.call(['systemctl', 'daemon-reload']),
+        ])
+
+    @mock.patch('subprocess.call', autospec=True)
+    @mock.patch('os.chmod')
+    def test_healthcheck_timer_create(self, mock_chmod, mock_subprocess_call):
+        container = 'my_app'
+        service = 'tripleo_' + container
+        cconfig = {'check_interval': '15'}
+        tempdir = tempfile.mkdtemp()
+        healthcheck_timer = service + '_healthcheck.timer'
+        sysd_unit_f = tempdir + healthcheck_timer
+
+        systemd.healthcheck_timer_create(container, cconfig, tempdir)
+        unit = open(sysd_unit_f, 'rt').read()
+
+        self.assertIn('Requires=my_app_healthcheck.service', unit)
+        self.assertIn('OnCalendar=*-*-* *:*:00/15', unit)
+        mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
+        mock_subprocess_call.assert_has_calls([
+            mock.call(['systemctl', 'enable', '--now', healthcheck_timer]),
+            mock.call(['systemctl', 'daemon-reload']),
+        ])
