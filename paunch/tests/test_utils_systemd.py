@@ -73,6 +73,7 @@ class TestUtilsSystemd(base.TestCase):
         systemd.healthcheck_create(container, tempdir)
         unit = open(sysd_unit_f, 'rt').read()
 
+        self.assertIn('Requisite=tripleo_my_app.service', unit)
         self.assertIn('ExecStart=/usr/bin/podman exec my_app '
                       '/openstack/healthcheck', unit)
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
@@ -95,7 +96,7 @@ class TestUtilsSystemd(base.TestCase):
         systemd.healthcheck_timer_create(container, cconfig, tempdir)
         unit = open(sysd_unit_f, 'rt').read()
 
-        self.assertIn('Requires=my_app_healthcheck.service', unit)
+        self.assertIn('Requires=tripleo_my_app_healthcheck.service', unit)
         self.assertIn('OnCalendar=*-*-* *:*:00/15', unit)
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
         mock_subprocess_call.assert_has_calls([

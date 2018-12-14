@@ -132,6 +132,7 @@ def healthcheck_create(container, sysdir='/etc/systemd/system/', log=None):
     log.debug('Creating systemd unit file: %s' % sysd_unit_f)
     s_config = {
         'name': container,
+        'service': service,
         'restart': 'restart',
     }
     with open(sysd_unit_f, 'w') as unit_file:
@@ -139,7 +140,7 @@ def healthcheck_create(container, sysdir='/etc/systemd/system/', log=None):
         unit_file.write("""[Unit]
 Description=%(name)s healthcheck
 After=paunch-container-shutdown.service
-Requisite=%(name)s.service
+Requisite=%(service)s.service
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/podman exec %(name)s /openstack/healthcheck
@@ -176,13 +177,14 @@ def healthcheck_timer_create(container, cconfig, sysdir='/etc/systemd/system/',
     interval = cconfig.get('check_interval', 30)
     s_config = {
         'name': container,
+        'service': service,
         'interval': interval
     }
     with open(sysd_timer_f, 'w') as timer_file:
         os.chmod(timer_file.name, 0o644)
         timer_file.write("""[Unit]
 Description=%(name)s container healthcheck
-Requires=%(name)s_healthcheck.service
+Requires=%(service)s_healthcheck.service
 [Timer]
 OnUnitActiveSec=90
 OnCalendar=*-*-* *:*:00/%(interval)s
