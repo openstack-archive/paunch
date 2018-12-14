@@ -99,16 +99,20 @@ def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
     # prefix is explained in the service_create().
     service = 'tripleo_' + container
 
-    sysd_unit_f = sysdir + service + '.service'
-    if os.path.isfile(sysd_unit_f):
-        log.debug('Stopping and disabling systemd service for %s' % service)
-        subprocess.call(['systemctl', 'stop', service])
-        subprocess.call(['systemctl', 'disable', service])
-        log.debug('Removing systemd unit file %s' % sysd_unit_f)
-        os.remove(sysd_unit_f)
-        subprocess.call(['systemctl', 'daemon-reload'])
-    else:
-        log.warning('No systemd unit file was found for %s' % service)
+    sysd_unit_f = service + '.service'
+    sysd_health_f = service + '_healthcheck.service'
+    sysd_timer_f = service + '_healthcheck.timer'
+    for sysd_f in sysd_unit_f, sysd_health_f, sysd_timer_f:
+        if os.path.isfile(sysdir + sysd_f):
+            log.debug('Stopping and disabling systemd service for %s' %
+                      service)
+            subprocess.call(['systemctl', 'stop', sysd_f])
+            subprocess.call(['systemctl', 'disable', sysd_f])
+            log.debug('Removing systemd unit file %s' % sysd_f)
+            os.remove(sysdir + sysd_f)
+            subprocess.call(['systemctl', 'daemon-reload'])
+        else:
+            log.warning('No systemd unit file was found for %s' % sysd_f)
 
 
 def healthcheck_create(container, sysdir='/etc/systemd/system/', log=None):

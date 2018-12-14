@@ -54,10 +54,25 @@ class TestUtilsSystemd(base.TestCase):
         mock_isfile.return_value = True
         container = 'my_app'
         service = 'tripleo_' + container
-        systemd.service_delete(container)
+        tempdir = tempfile.mkdtemp()
+
+        systemd.service_delete(container, tempdir)
+        mock_rm.assert_has_calls([
+            mock.call(tempdir + service + '.service'),
+            mock.call(tempdir + service + '_healthcheck.service'),
+            mock.call(tempdir + service + '_healthcheck.timer'),
+        ])
         mock_subprocess_call.assert_has_calls([
-            mock.call(['systemctl', 'stop', service]),
-            mock.call(['systemctl', 'disable', service]),
+            mock.call(['systemctl', 'stop', service + '.service']),
+            mock.call(['systemctl', 'disable', service + '.service']),
+            mock.call(['systemctl', 'daemon-reload']),
+            mock.call(['systemctl', 'stop', service + '_healthcheck.service']),
+            mock.call(['systemctl', 'disable', service +
+                       '_healthcheck.service']),
+            mock.call(['systemctl', 'daemon-reload']),
+            mock.call(['systemctl', 'stop', service + '_healthcheck.timer']),
+            mock.call(['systemctl', 'disable', service +
+                       '_healthcheck.timer']),
             mock.call(['systemctl', 'daemon-reload']),
         ])
 
