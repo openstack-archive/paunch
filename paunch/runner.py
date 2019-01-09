@@ -18,6 +18,7 @@ import random
 import string
 import subprocess
 
+from paunch.builder.base import BaseBuilder
 from paunch.builder import podman
 from paunch.utils import common
 from paunch.utils import systemd
@@ -215,25 +216,66 @@ class BaseRunner(object):
                 yield line.split()
 
     def remove_containers(self, conf_id):
+        configs = self.list_configs()
         for container in self.containers_in_config(conf_id):
-            self.remove_container(container)
+            # Find the container's configh in the known configs
+            # (the name should be matching its config name)
+            cid, cconfig = self.discover_container_config(
+                configs, container, container)
+            if cid != conf_id:
+                self.log.debug('Ignoring container %s from config'
+                               'ID %s' % (container, cid))
+                continue
+            self.remove_container(container, conf_id, cconfig)
 
-    def remove_container(self, container):
+    def remove_container(self, container, conf_id=None, cconfig=None):
         if self.cont_cmd == 'podman':
             systemd.service_delete(container=container, log=self.log)
+        # NOTE(bogdando): that's also used when applying changes on
+        # containers and must be a graceful operation
+        self.stop_container(container=container, cont_cmd=self.cont_cmd,
+                            quiet=True, conf_id=conf_id, cconfig=cconfig)
         cmd = [self.cont_cmd, 'rm', '-f', container]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
             self.log.error('Error removing container: %s' % container)
             self.log.error(cmd_stderr)
 
-    def stop_container(self, container, cont_cmd=None, quiet=False):
+    def stop_container(self, container, cont_cmd=None, quiet=False,
+                       conf_id=None, cconfig=None):
         cont_cmd = cont_cmd or self.cont_cmd
-        cmd = [cont_cmd, 'stop', container]
+        cmd = [cont_cmd, 'stop']
+        # Pick pre-configured timeout and signal or use defaults for graceful
+        # stopping of the container, which is important to have for applying
+        # the container config updates
+        config = {}
+        if cconfig and 'stop_signal' in cconfig.keys():
+            config[container] = cconfig
+        else:
+            config[container] = {'stop_signal': 'SIGTERM'}
+        if cconfig and 'stop_grace_period' in cconfig.keys():
+            config[container].update(cconfig)
+        else:
+            config[container].update({'stop_grace_period': '10s'})
+
+        builder = BaseBuilder(config_id=conf_id,
+                              config=config,
+                              runner=self,
+                              labels=None,
+                              log=self.log)
+        builder.string_arg(config[container], cmd, 'stop_signal',
+                           '--stop-signal')
+        builder.string_arg(config[container], cmd,
+                           'stop_grace_period', '--stop-timeout',
+                           builder.duration)
+        cmd.append(container)
+        # Log the stop command events disregard of the quiet setting
+        self.log.debug('Stopping container %s: %s' % (container, cmd))
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, quiet=quiet)
-        if returncode != 0 and not quiet:
+        if returncode != 0:
             self.log.error('Error stopping container: %s' % container)
-            self.log.error(cmd_stderr)
+            if not quiet:
+                self.log.error(cmd_stderr)
 
     def rename_containers(self):
         current_containers = []
