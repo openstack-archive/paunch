@@ -133,7 +133,7 @@ class BaseBuilder(object):
                 continue
 
             try:
-                ex_data = json.loads(ex_data_str)
+                ex_data = json.loads(str(ex_data_str))
             except Exception:
                 ex_data = None
 
