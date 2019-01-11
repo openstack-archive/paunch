@@ -15,6 +15,7 @@ import json
 import logging
 import re
 import tenacity
+import yaml
 
 LOG = logging.getLogger(__name__)
 
@@ -102,7 +103,7 @@ class ComposeV1Builder(object):
                 continue
 
             try:
-                ex_data = json.loads(ex_data_str)
+                ex_data = yaml.safe_load(str(ex_data_str))
             except Exception:
                 ex_data = None
 
