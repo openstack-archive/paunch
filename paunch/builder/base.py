@@ -16,6 +16,7 @@ import json
 import re
 import shutil
 import tenacity
+import yaml
 
 from paunch.utils import common
 from paunch.utils import systemd
@@ -133,7 +134,7 @@ class BaseBuilder(object):
                 continue
 
             try:
-                ex_data = json.loads(str(ex_data_str))
+                ex_data = yaml.safe_load(str(ex_data_str))
             except Exception:
                 ex_data = None
 
