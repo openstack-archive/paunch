@@ -353,7 +353,11 @@ class List(lister.Lister):
         data = []
         for k, v in configs.items():
             for i in v:
-                name = i.get('Name', '/')[1:]  # strip the leading slash
+                # docker has a leading slash in the name, strip it
+                if parsed_args.default_runtime == 'docker':
+                    name = i.get('Name', '/')[1:]
+                else:
+                    name = i.get('Name', '')
                 cmd = ' '.join(i.get('Config', {}).get('Cmd', []))
                 image = i.get('Config', {}).get('Image')
                 status = i.get('State', {}).get('Status')
