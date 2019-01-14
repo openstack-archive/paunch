@@ -94,11 +94,13 @@ class BaseRunner(object):
 
     def inspect(self, name, output_format=None, o_type='container',
                 quiet=False):
-        img_exist = self.image_exist(name)
-        # We want to verify if the image exists before inspecting it.
+        # If we're being asked to inspect a container image, we
+        # want to verify that the image exists before inspecting it.
         # Context: https://github.com/containers/libpod/issues/1845
-        if img_exist != 0:
-            return
+        if o_type == 'image':
+            img_exist = self.image_exist(name)
+            if img_exist != 0:
+                return
         cmd = [self.cont_cmd, 'inspect', '--type', o_type]
         if output_format:
             cmd.append('--format')
