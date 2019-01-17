@@ -151,8 +151,6 @@ ExecStart=/usr/bin/podman exec %(name)s /openstack/healthcheck
 [Install]
 WantedBy=multi-user.target
 """ % s_config)
-    subprocess.call(['systemctl', 'enable', '--now', healthcheck])
-    subprocess.call(['systemctl', 'daemon-reload'])
 
 
 def healthcheck_timer_create(container, cconfig, sysdir='/etc/systemd/system/',
@@ -188,10 +186,9 @@ def healthcheck_timer_create(container, cconfig, sysdir='/etc/systemd/system/',
         os.chmod(timer_file.name, 0o644)
         timer_file.write("""[Unit]
 Description=%(name)s container healthcheck
-Requires=%(service)s_healthcheck.service
 [Timer]
-OnUnitActiveSec=90
-OnCalendar=*-*-* *:*:00/%(interval)s
+OnActiveSec=120
+OnUnitActiveSec=%(interval)s
 [Install]
 WantedBy=timers.target""" % s_config)
     subprocess.call(['systemctl', 'enable', '--now', healthcheck_timer])
