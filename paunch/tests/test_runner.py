@@ -248,7 +248,10 @@ class TestBaseRunner(base.TestCase):
         }, result)
 
     @mock.patch('subprocess.Popen')
-    def test_remove_containers(self, popen):
+    @mock.patch('paunch.runner.BaseRunner.discover_container_config')
+    @mock.patch('paunch.runner.BaseRunner.list_configs', return_value=['foo'])
+    def test_remove_containers(self, configs, disco, popen):
+        disco.return_value = ('foo', None)
         self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
         self.runner.remove_container = mock.Mock()
 
@@ -260,7 +263,27 @@ class TestBaseRunner(base.TestCase):
                     '--filter', 'label=config_id=foo']
         )
         self.runner.remove_container.assert_has_calls([
-            mock.call('one'), mock.call('two'), mock.call('three')
+            mock.call('one', 'foo', None), mock.call('two', 'foo', None),
+            mock.call('three', 'foo', None)
+        ])
+
+    @mock.patch('subprocess.Popen')
+    @mock.patch('paunch.runner.BaseRunner.discover_container_config')
+    @mock.patch('paunch.runner.BaseRunner.list_configs', return_value=['foo'])
+    def test_remove_containers_omitting(self, configs, disco, popen):
+        disco.side_effect = [('foo', None), ('bar', None), ('foo', None)]
+        self.mock_execute(popen, 'one\ntwo\nthree', '', 0)
+        self.runner.remove_container = mock.Mock()
+
+        self.runner.remove_containers('foo')
+
+        self.assert_execute(
+            popen, ['docker', 'ps', '-q', '-a',
+                    '--filter', 'label=managed_by=tester',
+                    '--filter', 'label=config_id=foo']
+        )
+        self.runner.remove_container.assert_has_calls([
+            mock.call('one', 'foo', None), mock.call('three', 'foo', None)
         ])
 
     @mock.patch('subprocess.Popen')
@@ -278,16 +301,21 @@ class TestBaseRunner(base.TestCase):
 
         self.runner.stop_container('one')
         self.assert_execute(
-            popen, ['docker', 'stop', 'one']
+            popen, ['docker', 'stop', '--stop-signal=SIGTERM',
+                    '--stop-timeout=10.0', 'one']
         )
 
     @mock.patch('subprocess.Popen')
     def test_stop_container_override(self, popen):
         self.mock_execute(popen, '', '', 0)
 
-        self.runner.stop_container('one', 'podman')
+        config = {'one': {'stop_grace_period': '42m',
+                          'stop_signal': 'SIGINT'}}
+        self.runner.stop_container('one', 'podman', conf_id='foo',
+                                   cconfig=config['one'])
         self.assert_execute(
-            popen, ['podman', 'stop', 'one']
+            popen, ['podman', 'stop', '--stop-signal=SIGINT',
+                    '--stop-timeout=2520.0', 'one']
         )
 
     @mock.patch('subprocess.Popen')
