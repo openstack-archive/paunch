@@ -79,8 +79,12 @@ ExecStop=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
 KillMode=process
 [Install]
 WantedBy=multi-user.target""" % s_config)
-    subprocess.call(['systemctl', 'daemon-reload'])
-    subprocess.call(['systemctl', 'enable', '--now', service])
+    try:
+        subprocess.check_call(['systemctl', 'daemon-reload'])
+        subprocess.check_call(['systemctl', 'enable', '--now', service])
+    except subprocess.CalledProcessError:
+        log.exception("systemctl failed")
+        raise
 
 
 def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
@@ -106,11 +110,19 @@ def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
         if os.path.isfile(sysdir + sysd_f):
             log.debug('Stopping and disabling systemd service for %s' %
                       service)
-            subprocess.call(['systemctl', 'stop', sysd_f])
-            subprocess.call(['systemctl', 'disable', sysd_f])
+            try:
+                subprocess.check_call(['systemctl', 'stop', sysd_f])
+                subprocess.check_call(['systemctl', 'disable', sysd_f])
+            except subprocess.CalledProcessError:
+                log.exception("systemctl failed")
+                raise
             log.debug('Removing systemd unit file %s' % sysd_f)
             os.remove(sysdir + sysd_f)
-            subprocess.call(['systemctl', 'daemon-reload'])
+            try:
+                subprocess.check_call(['systemctl', 'daemon-reload'])
+            except subprocess.CalledProcessError:
+                log.exception("systemctl failed")
+                raise
         else:
             log.warning('No systemd unit file was found for %s' % sysd_f)
 
@@ -191,5 +203,10 @@ OnActiveSec=120
 OnUnitActiveSec=%(interval)s
 [Install]
 WantedBy=timers.target""" % s_config)
-    subprocess.call(['systemctl', 'enable', '--now', healthcheck_timer])
-    subprocess.call(['systemctl', 'daemon-reload'])
+    try:
+        subprocess.check_call(['systemctl', 'enable', '--now',
+                              healthcheck_timer])
+        subprocess.check_call(['systemctl', 'daemon-reload'])
+    except subprocess.CalledProcessError:
+        log.exception("systemctl failed")
+        raise

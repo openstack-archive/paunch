@@ -23,9 +23,9 @@ from paunch.utils import systemd
 
 class TestUtilsSystemd(base.TestCase):
 
-    @mock.patch('subprocess.call', autospec=True)
+    @mock.patch('subprocess.check_call', autospec=True)
     @mock.patch('os.chmod')
-    def test_service_create(self, mock_chmod, mock_subprocess_call):
+    def test_service_create(self, mock_chmod, mock_subprocess_check_call):
         container = 'my_app'
         service = 'tripleo_' + container
         cconfig = {'depends_on': ['something'], 'restart': 'unless-stopped',
@@ -40,7 +40,7 @@ class TestUtilsSystemd(base.TestCase):
         self.assertIn('ExecStop=/usr/bin/podman stop -t 15 my_app', unit)
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
 
-        mock_subprocess_call.assert_has_calls([
+        mock_subprocess_check_call.assert_has_calls([
             mock.call(['systemctl', 'daemon-reload']),
             mock.call(['systemctl', 'enable', '--now', service]),
         ])
@@ -49,8 +49,9 @@ class TestUtilsSystemd(base.TestCase):
 
     @mock.patch('os.remove', autospec=True)
     @mock.patch('os.path.isfile', autospec=True)
-    @mock.patch('subprocess.call', autospec=True)
-    def test_service_delete(self, mock_subprocess_call, mock_isfile, mock_rm):
+    @mock.patch('subprocess.check_call', autospec=True)
+    def test_service_delete(self, mock_subprocess_check_call, mock_isfile,
+                            mock_rm):
         mock_isfile.return_value = True
         container = 'my_app'
         service = 'tripleo_' + container
@@ -62,7 +63,7 @@ class TestUtilsSystemd(base.TestCase):
             mock.call(tempdir + service + '_healthcheck.service'),
             mock.call(tempdir + service + '_healthcheck.timer'),
         ])
-        mock_subprocess_call.assert_has_calls([
+        mock_subprocess_check_call.assert_has_calls([
             mock.call(['systemctl', 'stop', service + '.service']),
             mock.call(['systemctl', 'disable', service + '.service']),
             mock.call(['systemctl', 'daemon-reload']),
@@ -92,9 +93,10 @@ class TestUtilsSystemd(base.TestCase):
                       '/openstack/healthcheck', unit)
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
 
-    @mock.patch('subprocess.call', autospec=True)
+    @mock.patch('subprocess.check_call', autospec=True)
     @mock.patch('os.chmod')
-    def test_healthcheck_timer_create(self, mock_chmod, mock_subprocess_call):
+    def test_healthcheck_timer_create(self, mock_chmod,
+                                      mock_subprocess_check_call):
         container = 'my_app'
         service = 'tripleo_' + container
         cconfig = {'check_interval': '15'}
@@ -108,7 +110,7 @@ class TestUtilsSystemd(base.TestCase):
         self.assertIn('OnActiveSec=120', unit)
         self.assertIn('OnUnitActiveSec=15', unit)
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
-        mock_subprocess_call.assert_has_calls([
+        mock_subprocess_check_call.assert_has_calls([
             mock.call(['systemctl', 'enable', '--now', healthcheck_timer]),
             mock.call(['systemctl', 'daemon-reload']),
         ])
