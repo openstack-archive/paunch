@@ -33,7 +33,7 @@ def configure_logging(name, level=3, log_file=None):
         ll = logging.WARNING
 
     log.setLevel(ll)
-    handler = logging.StreamHandler(sys.stdout)
+    handler = logging.StreamHandler(sys.stderr)
     handler.setLevel(ll)
     if log_file:
         fhandler = logging.FileHandler(log_file)
