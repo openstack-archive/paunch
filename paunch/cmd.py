@@ -65,6 +65,13 @@ class Apply(command.Command):
             choices=['docker', 'podman'],
             help=('Default runtime for containers. Can be docker or podman.'),
         )
+        parser.add_argument(
+            '--container-log-path',
+            dest='cont_log_path',
+            default=None,
+            help=('Absolute directory path for container log. Works only for '
+                  'podman container engine')
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -85,7 +92,8 @@ class Apply(command.Command):
             labels=labels,
             cont_cmd=parsed_args.default_runtime,
             log_level=log_level,
-            log_file=log_file
+            log_file=log_file,
+            cont_log_path=parsed_args.cont_log_path
         )
 
         return rc

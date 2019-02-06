@@ -11,19 +11,34 @@
 #   under the License.
 #
 
+import os
 from paunch.builder import base
 
 
 class PodmanBuilder(base.BaseBuilder):
 
-    def __init__(self, config_id, config, runner, labels=None, log=None):
+    def __init__(self, config_id, config, runner, labels=None, log=None,
+                 cont_log_path=None):
         super(PodmanBuilder, self).__init__(config_id, config, runner,
-                                            labels, log)
+                                            labels, log, cont_log_path)
 
     def container_run_args(self, cmd, container):
         cconfig = self.config[container]
         if cconfig.get('detach', True):
             cmd.append('--detach=true')
+
+        if self.cont_log_path is not None:
+            if os.path.isabs(self.cont_log_path):
+
+                if not os.path.exists(self.cont_log_path):
+                    os.makedirs(self.cont_log_path)
+                log_path = os.path.join(self.cont_log_path, container)
+                logging = ['--log-driver', 'json-file',
+                           '--log-opt', 'path=%s' % log_path]
+                cmd.extend(logging)
+            else:
+                raise ValueError('cont_log_path passed but not absolute.')
+
         self.list_or_string_arg(cconfig, cmd, 'env_file', '--env-file')
         # TODO(sbaker): support the dict layout for this property
         for v in cconfig.get('environment', []):

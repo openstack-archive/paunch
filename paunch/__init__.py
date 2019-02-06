@@ -25,7 +25,8 @@ __version__ = pbr.version.VersionInfo('paunch').version_string()
 
 
 def apply(config_id, config, managed_by, labels=None, cont_cmd='docker',
-          default_runtime=None, log_level=None, log_file=None):
+          default_runtime=None, log_level=None, log_file=None,
+          cont_log_path=None):
     """Execute supplied container configuration.
 
     :param str config_id: Unique config ID, should not be re-used until any
@@ -40,7 +41,9 @@ def apply(config_id, config, managed_by, labels=None, cont_cmd='docker',
     :param str cont_cmd: Optional override to the container command to run.
     :param str default_runtime: (deprecated) does nothing.
     :param int log_level: optional log level for loggers
-    :param int log_file: optional log file for messages
+    :param str log_file: optional log file for messages
+    :param str cont_log_path: optional log path for containers. Works only for
+                              podman engine. Must be an absolute path.
 
     :returns (list, list, int) lists of stdout and stderr for each execution,
                                and a single return code representing the
@@ -68,7 +71,8 @@ def apply(config_id, config, managed_by, labels=None, cont_cmd='docker',
             config=config,
             runner=r,
             labels=labels,
-            log=log
+            log=log,
+            cont_log_path=cont_log_path
         )
     else:
         log.error("container runtime not supported: %s" % cont_cmd)

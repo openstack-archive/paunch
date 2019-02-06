@@ -1,0 +1,7 @@
+---
+features:
+  - Add new "cont_log_path". It must point to a directory, where the container
+    engine will puts logs issued from containers standard output. It works only
+    for podman.
+  - Add new "--container-log-path" allowing to actually set cont_log_path from
+    the CLI call directly.

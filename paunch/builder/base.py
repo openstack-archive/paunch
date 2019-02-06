@@ -24,13 +24,15 @@ from paunch.utils import systemd
 
 class BaseBuilder(object):
 
-    def __init__(self, config_id, config, runner, labels, log=None):
+    def __init__(self, config_id, config, runner, labels, log=None,
+                 cont_log_path=None):
         self.config_id = config_id
         self.config = config
         self.labels = labels
         self.runner = runner
         # Leverage pre-configured logger
         self.log = log or common.configure_logging(__name__)
+        self.cont_log_path = cont_log_path
 
     def apply(self):
 
@@ -79,6 +81,7 @@ class BaseBuilder(object):
                     '--name',
                     container_name
                 ]
+
                 self.label_arguments(cmd, container)
                 self.container_run_args(cmd, container)
             elif action == 'exec':

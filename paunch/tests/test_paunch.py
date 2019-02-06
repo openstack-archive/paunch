@@ -106,7 +106,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             config={'bar': 'baz'},
             managed_by='tester',
             labels=None,
-            cont_cmd='podman')
+            cont_cmd='podman',
+            cont_log_path=None)
         runner.assert_called_once_with('tester', cont_cmd='podman',
                                        log=mock.ANY)
         builder.assert_called_once_with(
@@ -114,7 +115,30 @@ class TestPaunchPodmanRuntime(base.TestCase):
             config={'bar': 'baz'},
             runner=runner.return_value,
             labels=None,
-            log=mock.ANY
+            log=mock.ANY,
+            cont_log_path=None
+        )
+        builder.return_value.apply.assert_called_once_with()
+
+    @mock.patch('paunch.builder.podman.PodmanBuilder', autospec=True)
+    @mock.patch('paunch.runner.PodmanRunner', autospec=True)
+    def test_apply_container_log(self, runner, builder):
+        paunch.apply(
+            config_id='foo',
+            config={'bar': 'baz'},
+            managed_by='tester',
+            labels=None,
+            cont_cmd='podman',
+            cont_log_path='/var/log')
+        runner.assert_called_once_with('tester', cont_cmd='podman',
+                                       log=mock.ANY)
+        builder.assert_called_once_with(
+            config_id='foo',
+            config={'bar': 'baz'},
+            runner=runner.return_value,
+            labels=None,
+            log=mock.ANY,
+            cont_log_path='/var/log'
         )
         builder.return_value.apply.assert_called_once_with()
 
@@ -126,7 +150,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             config={'bar': 'baz'},
             managed_by='tester',
             labels={'bink': 'boop'},
-            cont_cmd='podman')
+            cont_cmd='podman',
+            cont_log_path=None)
 
         runner.assert_called_once_with('tester', cont_cmd='podman',
                                        log=mock.ANY)
@@ -135,7 +160,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             config={'bar': 'baz'},
             runner=runner.return_value,
             labels={'bink': 'boop'},
-            log=mock.ANY
+            log=mock.ANY,
+            cont_log_path=None
         )
         builder.return_value.apply.assert_called_once_with()
 
