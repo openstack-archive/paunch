@@ -188,11 +188,12 @@ def healthcheck_timer_create(container, cconfig, sysdir='/etc/systemd/system/',
     healthcheck_timer = service + '_healthcheck.timer'
     sysd_timer_f = sysdir + healthcheck_timer
     log.debug('Creating systemd timer file: %s' % sysd_timer_f)
-    interval = cconfig.get('check_interval', 30)
+    interval = cconfig.get('check_interval', 60)
     s_config = {
         'name': container,
         'service': service,
-        'interval': interval
+        'interval': interval,
+        'randomize': int(interval) * 3 / 4
     }
     with open(sysd_timer_f, 'w') as timer_file:
         os.chmod(timer_file.name, 0o644)
@@ -201,6 +202,7 @@ Description=%(name)s container healthcheck
 [Timer]
 OnActiveSec=120
 OnUnitActiveSec=%(interval)s
+RandomizedDelaySec=%(randomize)s
 [Install]
 WantedBy=timers.target""" % s_config)
     try:
