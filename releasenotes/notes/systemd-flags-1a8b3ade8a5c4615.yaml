@@ -1,0 +1,3 @@
+---
+features:
+  - Adds a new systemd_exec_flags parameter for paunch-managed systemd unit

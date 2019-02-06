@@ -47,6 +47,28 @@ class TestUtilsSystemd(base.TestCase):
 
         os.rmdir(tempdir)
 
+    @mock.patch('subprocess.check_call', autospec=True)
+    @mock.patch('os.chmod')
+    def test_svc_extended_create(self, mock_chmod, mock_subprocess_check_call):
+        container = 'my_app'
+        service = 'tripleo_' + container
+        cconfig = {'depends_on': ['something'], 'restart': 'unless-stopped',
+                   'stop_grace_period': '15',
+                   'systemd_exec_flags': {'RootDirectory': '/srv',
+                                          'LimitCPU': '60',
+                                          'RuntimeDirectory': 'my_app foo/bar'}
+                   }
+        tempdir = tempfile.mkdtemp()
+        systemd.service_create(container, cconfig, tempdir)
+
+        sysd_unit_f = tempdir + service + '.service'
+        unit = open(sysd_unit_f, 'rt').read()
+        self.assertIn('RootDirectory=/srv', unit)
+        self.assertIn('LimitCPU=60', unit)
+        self.assertIn('RuntimeDirectory=my_app foo/bar', unit)
+
+        os.rmdir(tempdir)
+
     @mock.patch('os.remove', autospec=True)
     @mock.patch('os.path.isfile', autospec=True)
     @mock.patch('subprocess.check_call', autospec=True)

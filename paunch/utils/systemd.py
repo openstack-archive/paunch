@@ -51,6 +51,11 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR,
 
     restart = cconfig.get('restart', 'always')
     stop_grace_period = cconfig.get('stop_grace_period', '10')
+
+    # Please refer to systemd.exec documentation for those entries
+    # https://www.freedesktop.org/software/systemd/man/systemd.exec.html
+    sys_exec = cconfig.get('systemd_exec_flags', {})
+
     # SystemD doesn't have the equivalent of docker unless-stopped.
     # Let's force 'always' so containers aren't restarted when stopped by
     # systemd, but restarted when in failure. Also this code is only for
@@ -65,6 +70,7 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR,
         'wants': wants,
         'restart': restart,
         'stop_grace_period': stop_grace_period,
+        'sys_exec': '\n'.join(['%s=%s' % (x, y) for x, y in sys_exec.items()]),
     }
     with open(sysd_unit_f, 'w') as unit_file:
         os.chmod(unit_file.name, 0o644)
@@ -77,6 +83,7 @@ Restart=%(restart)s
 ExecStart=/usr/bin/podman start -a %(name)s
 ExecStop=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
 KillMode=process
+%(sys_exec)s
 [Install]
 WantedBy=multi-user.target""" % s_config)
     try:
