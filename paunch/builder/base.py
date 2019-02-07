@@ -63,11 +63,9 @@ class BaseBuilder(object):
             # When upgrading from Docker to Podman, we want to stop the
             # container that runs under Docker first before starting it with
             # Podman. The container will be removed later in THT during
-            # upgrade_tasks. And attempt to do that gracefully as well.
+            # upgrade_tasks.
             if self.runner.cont_cmd == 'podman' and self.which('docker'):
-                self.runner.stop_container(container, 'docker', quiet=True,
-                                           conf_id=self.config_id,
-                                           cconfig=cconfig)
+                self.runner.stop_container(container, 'docker', quiet=True)
 
             if action == 'run':
                 if container in desired_names:
@@ -127,15 +125,12 @@ class BaseBuilder(object):
                 self.runner.remove_container(container)
                 continue
 
-            cconfig = self.config.get(cn[-1])
             ex_data_str = self.runner.inspect(
                 container, '{{index .Config.Labels "config_data"}}')
             if not ex_data_str:
                 self.log.debug("Deleting container (no config_data): %s"
                                % container)
-                self.runner.remove_container(container,
-                                             conf_id=self.config_id,
-                                             cconfig=cconfig)
+                self.runner.remove_container(container)
                 continue
 
             try:
@@ -147,9 +142,7 @@ class BaseBuilder(object):
             if new_data != ex_data:
                 self.log.debug("Deleting container (changed config_data): %s"
                                % container)
-                self.runner.remove_container(container,
-                                             conf_id=self.config_id,
-                                             cconfig=cconfig)
+                self.runner.remove_container(container)
 
         # deleting containers is an opportunity for renames to their
         # preferred name

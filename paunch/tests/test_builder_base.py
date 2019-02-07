@@ -185,8 +185,6 @@ class TestBaseBuilder(base.TestCase):
             'two': {
                 'start_order': 1,
                 'image': 'centos:7',
-                'stop_signal': 'SIGKILL',
-                'stop_grace_period': '1m2s',
             },
             # running with the same config
             'three': {
@@ -215,18 +213,12 @@ class TestBaseBuilder(base.TestCase):
 six six
 two-12345678 two
 three-12345678 three''', '', 0),
-            # stop five
-            ('', '', 0),
             # rm five
-            ('', '', 0),
-            # stop six
             ('', '', 0),
             # rm six
             ('', '', 0),
             # inspect two
             ('{"start_order": 1, "image": "centos:6"}', '', 0),
-            # stop two, changed config data
-            ('', '', 0),
             # rm two, changed config data
             ('', '', 0),
             # inspect three
@@ -270,18 +262,12 @@ three-12345678 three''', '', 0),
                 mock.ANY
             ),
             # rm containers not in config
-            mock.call(['docker', 'stop', '--stop-signal=SIGTERM',
-                       '--stop-timeout=10.0', 'five'], quiet=True),
             mock.call(['docker', 'rm', '-f', 'five'], mock.ANY),
-            mock.call(['docker', 'stop', '--stop-signal=SIGTERM',
-                       '--stop-timeout=10.0', 'six'], quiet=True),
             mock.call(['docker', 'rm', '-f', 'six'], mock.ANY),
             # rm two, changed config
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',
                        'two-12345678'], mock.ANY, False),
-            mock.call(['docker', 'stop', '--stop-signal=SIGKILL',
-                       '--stop-timeout=62.0', 'two-12345678'], quiet=True),
             mock.call(['docker', 'rm', '-f', 'two-12345678'], mock.ANY),
             # check three, config hasn't changed
             mock.call(['docker', 'inspect', '--type', 'container',
@@ -318,8 +304,7 @@ three-12345678 three''', '', 0),
                  '--label', 'container_name=two',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['two']),
-                 '--detach=true', '--stop-signal=SIGKILL',
-                 '--stop-timeout=62.0', 'centos:7'], mock.ANY
+                 '--detach=true', 'centos:7'], mock.ANY
             ),
             # don't run three, its already running
             # run four
