@@ -38,7 +38,7 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR,
     """
     log = log or common.configure_logging(__name__)
     # We prefix the SystemD service so we can identify them better:
-    # e.g. systemctl list-unit-files | grep paunch
+    # e.g. systemctl list-unit-files | grep tripleo_
     # It'll help to not conflict when rpms are installed on the host and
     # have the same service name as their container name.
     # For example haproxy rpm and haproxy container would have the same
