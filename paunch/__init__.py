@@ -55,16 +55,7 @@ def apply(config_id, config, managed_by, labels=None, cont_cmd='docker',
         log.warning("DEPRECATION: 'default_runtime' does nothing, "
                     "use 'cont_cmd' instead")
 
-    if cont_cmd == 'docker':
-        r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
-        builder = compose1.ComposeV1Builder(
-            config_id=config_id,
-            config=config,
-            runner=r,
-            labels=labels,
-            log=log
-        )
-    elif cont_cmd == 'podman':
+    if cont_cmd == 'podman':
         r = runner.PodmanRunner(managed_by, cont_cmd=cont_cmd, log=log)
         builder = podman.PodmanBuilder(
             config_id=config_id,
@@ -75,7 +66,14 @@ def apply(config_id, config, managed_by, labels=None, cont_cmd='docker',
             cont_log_path=cont_log_path
         )
     else:
-        log.error("container runtime not supported: %s" % cont_cmd)
+        r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
+        builder = compose1.ComposeV1Builder(
+            config_id=config_id,
+            config=config,
+            runner=r,
+            labels=labels,
+            log=log
+        )
     return builder.apply()
 
 
@@ -98,13 +96,12 @@ def cleanup(config_ids, managed_by, cont_cmd='docker', default_runtime=None,
         log.warning("DEPRECATION: 'default_runtime' does nothing, "
                     "use 'cont_cmd' instead")
 
-    if cont_cmd == 'docker':
-        r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
-    elif cont_cmd == 'podman':
+    if cont_cmd == 'podman':
         r = runner.PodmanRunner(managed_by, cont_cmd=cont_cmd, log=log)
         log.warning("paunch cleanup is partially supported with podman")
     else:
-        log.error("container runtime not supported: %s" % cont_cmd)
+        r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
+
     r.delete_missing_configs(config_ids)
     r.rename_containers()
 
@@ -129,12 +126,11 @@ def list(managed_by, cont_cmd='docker', default_runtime=None,
         log.warning("DEPRECATION: 'default_runtime' does nothing, "
                     "use 'cont_cmd' instead")
 
-    if cont_cmd == 'docker':
-        r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
-    elif cont_cmd == 'podman':
+    if cont_cmd == 'podman':
         r = runner.PodmanRunner(managed_by, cont_cmd=cont_cmd, log=log)
     else:
-        log.error("container runtime not supported: %s" % cont_cmd)
+        r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
+
     return r.list_configs()
 
 
@@ -169,16 +165,7 @@ def debug(config_id, container_name, action, config, managed_by, labels=None,
         log.warning("DEPRECATION: 'default_runtime' does nothing, "
                     "use 'cont_cmd' instead")
 
-    if cont_cmd == 'docker':
-        r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
-        builder = compose1.ComposeV1Builder(
-            config_id=config_id,
-            config=config,
-            runner=r,
-            labels=labels,
-            log=log
-        )
-    elif cont_cmd == 'podman':
+    if cont_cmd == 'podman':
         r = runner.PodmanRunner(managed_by, cont_cmd=cont_cmd, log=log)
         builder = podman.PodmanBuilder(
             config_id=config_id,
@@ -188,7 +175,14 @@ def debug(config_id, container_name, action, config, managed_by, labels=None,
             log=log
         )
     else:
-        log.error("container runtime not supported: %s" % cont_cmd)
+        r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
+        builder = compose1.ComposeV1Builder(
+            config_id=config_id,
+            config=config,
+            runner=r,
+            labels=labels,
+            log=log
+        )
     if action == 'print-cmd':
         cmd = [
             r.cont_cmd,
@@ -234,12 +228,11 @@ def delete(config_ids, managed_by, cont_cmd='docker', default_runtime=None,
     if not config_ids:
         log.warn('No config IDs specified')
 
-    if cont_cmd == 'docker':
-        r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
-    elif cont_cmd == 'podman':
+    if cont_cmd == 'podman':
         r = runner.PodmanRunner(managed_by, cont_cmd=cont_cmd, log=log)
         log.warning("paunch cleanup is partially supported with podman")
     else:
-        log.error("container runtime not supported: %s" % cont_cmd)
+        r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
+
     for conf_id in config_ids:
         r.remove_containers(conf_id)
