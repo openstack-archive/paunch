@@ -30,6 +30,9 @@ class BaseRunner(object):
         # Leverage pre-configured logger
         self.log = log or common.configure_logging(__name__)
         self.cont_log_path = cont_log_path
+        if self.cont_cmd == 'docker':
+            self.log.warning('docker runtime is deprecated in Stein '
+                             'and will be removed in Train.')
 
     @staticmethod
     def execute(cmd, log=None, quiet=False):
