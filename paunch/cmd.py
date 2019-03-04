@@ -61,7 +61,7 @@ class Apply(command.Command):
         parser.add_argument(
             '--default-runtime',
             dest='default_runtime',
-            default='docker',
+            default='podman',
             choices=['docker', 'podman'],
             help=('Default runtime for containers. Can be docker or podman.'),
         )
@@ -122,7 +122,7 @@ class Cleanup(command.Command):
         parser.add_argument(
             '--default-runtime',
             dest='default_runtime',
-            default='docker',
+            default='podman',
             choices=['docker', 'podman'],
             help=('Default runtime for containers. Can be docker or podman.'),
         )
@@ -162,7 +162,7 @@ class Delete(command.Command):
         parser.add_argument(
             '--default-runtime',
             dest='default_runtime',
-            default='docker',
+            default='podman',
             choices=['docker', 'podman'],
             help=('Default runtime for containers. Can be docker or podman.'),
         )
@@ -264,7 +264,7 @@ class Debug(command.Command):
         parser.add_argument(
             '--default-runtime',
             dest='default_runtime',
-            default='docker',
+            default='podman',
             choices=['docker', 'podman'],
             help=('Default runtime for containers. Can be docker or podman.'),
         )
@@ -336,7 +336,7 @@ class List(lister.Lister):
         parser.add_argument(
             '--default-runtime',
             dest='default_runtime',
-            default='docker',
+            default='podman',
             choices=['docker', 'podman'],
             help=('Default runtime for containers. Can be docker or podman.'),
         )

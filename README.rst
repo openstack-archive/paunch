@@ -13,8 +13,7 @@ Utility to launch and manage containers using YAML based configuration data
 Features
 --------
 
-* Single host only, operations are performed via the docker client on the
-  currently configured docker service.
+* Single host only, operations are performed via the podman client.
 * Zero external state, only labels on running containers are used when
   determining which containers an operation will perform on.
 * Single threaded and blocking, containers which are not configured to detach
@@ -64,7 +63,7 @@ Applied by running:
     $ echo hi >> paunch-state.txt
 
 A container called ``hello`` will be created, print a Hello World message, then
-exit. You can confirm that it still exists by running ``docker ps -a``.
+exit. You can confirm that it still exists by running ``podman ps -a``.
 
 Now lets try running the exact same ``paunch apply`` command:
 
@@ -82,7 +81,7 @@ Lets try again with a unique --config-id:
     $ paunch --verbose apply --file examples/hello-world.yml --config-id hi-again
     $ echo hi-again >> paunch-state.txt
 
-Doing a ``docker ps -a`` now will show that there are now 2 containers, one
+Doing a ``podman ps -a`` now will show that there are now 2 containers, one
 called ``hello`` and the other called ``hello-(random suffix)``. Lets delete the
 one associated with the ``hi`` config-id:
 
@@ -93,7 +92,7 @@ one associated with the ``hi`` config-id:
     $ cat paunch-state.txt
     $ paunch --verbose cleanup $(cat paunch-state.txt)
 
-Doing a ``docker ps -a`` will show that the original ``hello`` container has been
+Doing a ``podman ps -a`` will show that the original ``hello`` container has been
 deleted and ``hello-(random suffix)`` has been renamed to ``hello``
 
 Generally ``paunch cleanup`` will be run first to delete containers for configs
@@ -158,7 +157,7 @@ container.  This can be used to:
 
 * Run a container with a specific configuration.
 * Dump the configuration of a given container in either json or yaml.
-* Output the docker command line used to start the container.
+* Output the podman command line used to start the container.
 * Run a container with any configuration additions you wish such that you can
   run it with a shell as any user etc.
 

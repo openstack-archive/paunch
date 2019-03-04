@@ -23,7 +23,7 @@ class TestPaunchDockerRuntime(base.TestCase):
     @mock.patch('paunch.builder.compose1.ComposeV1Builder', autospec=True)
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
     def test_apply(self, runner, builder):
-        paunch.apply('foo', {'bar': 'baz'}, 'tester')
+        paunch.apply('foo', {'bar': 'baz'}, 'tester', cont_cmd='docker')
         runner.assert_called_once_with('tester', cont_cmd='docker',
                                        log=mock.ANY)
         builder.assert_called_once_with(
@@ -41,6 +41,7 @@ class TestPaunchDockerRuntime(base.TestCase):
         paunch.apply(
             config_id='foo',
             config={'bar': 'baz'},
+            cont_cmd='docker',
             managed_by='tester',
             labels={'bink': 'boop'})
 
@@ -57,7 +58,7 @@ class TestPaunchDockerRuntime(base.TestCase):
 
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
     def test_cleanup(self, runner):
-        paunch.cleanup(['foo', 'bar'], 'tester')
+        paunch.cleanup(['foo', 'bar'], 'tester', cont_cmd='docker')
         runner.assert_called_once_with('tester', cont_cmd='docker',
                                        log=mock.ANY)
         runner.return_value.delete_missing_configs.assert_called_once_with(
@@ -66,14 +67,14 @@ class TestPaunchDockerRuntime(base.TestCase):
 
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
     def test_list(self, runner):
-        paunch.list('tester')
+        paunch.list('tester', cont_cmd='docker')
         runner.assert_called_once_with('tester', cont_cmd='docker',
                                        log=mock.ANY)
         runner.return_value.list_configs.assert_called_once_with()
 
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
     def test_delete(self, runner):
-        paunch.delete(['foo', 'bar'], 'tester')
+        paunch.delete(['foo', 'bar'], 'tester', cont_cmd='docker')
         runner.assert_called_once_with('tester', cont_cmd='docker',
                                        log=mock.ANY)
         runner.return_value.remove_containers.assert_has_calls([

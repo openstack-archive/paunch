@@ -1,0 +1,4 @@
+---
+features:
+  - |
+    Podman is now the default container runtime, replacing Docker.

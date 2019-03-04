@@ -24,7 +24,7 @@ from paunch.utils import common
 __version__ = pbr.version.VersionInfo('paunch').version_string()
 
 
-def apply(config_id, config, managed_by, labels=None, cont_cmd='docker',
+def apply(config_id, config, managed_by, labels=None, cont_cmd='podman',
           default_runtime=None, log_level=None, log_file=None,
           cont_log_path=None):
     """Execute supplied container configuration.
@@ -77,7 +77,7 @@ def apply(config_id, config, managed_by, labels=None, cont_cmd='docker',
     return builder.apply()
 
 
-def cleanup(config_ids, managed_by, cont_cmd='docker', default_runtime=None,
+def cleanup(config_ids, managed_by, cont_cmd='podman', default_runtime=None,
             log_level=None, log_file=None):
     """Delete containers no longer applied, rename others to preferred name.
 
@@ -106,7 +106,7 @@ def cleanup(config_ids, managed_by, cont_cmd='docker', default_runtime=None,
     r.rename_containers()
 
 
-def list(managed_by, cont_cmd='docker', default_runtime=None,
+def list(managed_by, cont_cmd='podman', default_runtime=None,
          log_level=None, log_file=None):
     """List all containers associated with all config IDs.
 
@@ -118,7 +118,7 @@ def list(managed_by, cont_cmd='docker', default_runtime=None,
     :param int log_file: optional log file for messages
 
     :returns a dict where the key is the config ID and the value is a list of
-             'docker inspect' dicts for each container.
+             'podman inspect' dicts for each container.
     :rtype: defaultdict(list)
     """
     log = common.configure_logging(__name__, log_level, log_file)
@@ -135,7 +135,7 @@ def list(managed_by, cont_cmd='docker', default_runtime=None,
 
 
 def debug(config_id, container_name, action, config, managed_by, labels=None,
-          cont_cmd='docker', default_runtime=None, log_level=None,
+          cont_cmd='podman', default_runtime=None, log_level=None,
           log_file=None):
     """Execute supplied container configuration.
 
@@ -210,7 +210,7 @@ def debug(config_id, container_name, action, config, managed_by, labels=None,
                          '"print-cmd", or "run"')
 
 
-def delete(config_ids, managed_by, cont_cmd='docker', default_runtime=None,
+def delete(config_ids, managed_by, cont_cmd='podman', default_runtime=None,
            log_level=None, log_file=None):
     """Delete containers with the specified config IDs.
 
