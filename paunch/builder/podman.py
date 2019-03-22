@@ -34,7 +34,7 @@ class PodmanBuilder(base.BaseBuilder):
                     os.makedirs(self.cont_log_path)
                 log_path = os.path.join(self.cont_log_path, container)
                 logging = ['--log-driver', 'json-file',
-                           '--log-opt', 'path=%s' % log_path]
+                           '--log-opt', 'path=%s.log' % log_path]
                 cmd.extend(logging)
             else:
                 raise ValueError('cont_log_path passed but not absolute.')
