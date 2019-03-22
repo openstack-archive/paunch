@@ -82,7 +82,7 @@ Wants=%(wants)s
 Restart=%(restart)s
 ExecStart=/usr/bin/podman start -a %(name)s
 ExecStop=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
-KillMode=process
+KillMode=none
 %(sys_exec)s
 [Install]
 WantedBy=multi-user.target""" % s_config)
