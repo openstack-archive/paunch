@@ -131,7 +131,7 @@ def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
                 log.exception("systemctl failed")
                 raise
         else:
-            log.warning('No systemd unit file was found for %s' % sysd_f)
+            log.info('No systemd unit file was found for %s' % sysd_f)
 
 
 def healthcheck_create(container, sysdir='/etc/systemd/system/', log=None):
