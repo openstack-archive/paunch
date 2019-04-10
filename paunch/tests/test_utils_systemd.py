@@ -115,6 +115,20 @@ class TestUtilsSystemd(base.TestCase):
                       '/openstack/healthcheck', unit)
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
 
+    @mock.patch('os.chmod')
+    def test_healthcheck_create_command(self, mock_chmod):
+        container = 'my_app'
+        service = 'tripleo_' + container
+        tempdir = tempfile.mkdtemp()
+        healthcheck = service + '_healthcheck.service'
+        sysd_unit_f = tempdir + healthcheck
+        check = '/foo/bar baz'
+
+        systemd.healthcheck_create(container, tempdir, test=check)
+        unit = open(sysd_unit_f, 'rt').read()
+        self.assertIn('ExecStart=/usr/bin/podman exec my_app '
+                      '/foo/bar baz', unit)
+
     @mock.patch('subprocess.check_call', autospec=True)
     @mock.patch('os.chmod')
     def test_healthcheck_timer_create(self, mock_chmod,

@@ -109,8 +109,9 @@ class BaseBuilder(object):
                                            cconfig=cconfig,
                                            log=self.log)
                     if 'healthcheck' in cconfig:
+                        check = cconfig.get('healthcheck')['test']
                         systemd.healthcheck_create(container=container_name,
-                                                   log=self.log)
+                                                   log=self.log, test=check)
                         systemd.healthcheck_timer_create(
                             container=container_name,
                             cconfig=cconfig,
