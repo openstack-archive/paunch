@@ -45,6 +45,7 @@ class TestPodmanBuilder(base.TestBaseBuilder):
         builder.container_run_args(cmd, 'one')
         self.assertEqual(
             ['podman', 'run', '--name', 'one',
+             '--conmon-pidfile=/var/run/one.pid',
              '--detach=true', '--env-file=/tmp/foo.env',
              '--net=host', '--ipc=host', '--pid=container:bar',
              '--uts=host', '--privileged=true', '--user=bar',

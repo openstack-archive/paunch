@@ -38,6 +38,7 @@ class TestUtilsSystemd(base.TestCase):
         self.assertIn('Wants=something.service', unit)
         self.assertIn('Restart=always', unit)
         self.assertIn('ExecStop=/usr/bin/podman stop -t 15 my_app', unit)
+        self.assertIn('PIDFile=/var/run/my_app.pid', unit)
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
 
         mock_subprocess_check_call.assert_has_calls([

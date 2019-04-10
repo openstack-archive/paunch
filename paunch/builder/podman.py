@@ -24,6 +24,10 @@ class PodmanBuilder(base.BaseBuilder):
 
     def container_run_args(self, cmd, container):
         cconfig = self.config[container]
+
+        # write out a pid file so we can restart the container via systemd
+        cmd.append('--conmon-pidfile=/var/run/{}.pid'.format(container))
+
         if cconfig.get('detach', True):
             cmd.append('--detach=true')
 
