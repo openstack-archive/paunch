@@ -136,7 +136,8 @@ def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
             log.info('No systemd unit file was found for %s' % sysd_f)
 
 
-def healthcheck_create(container, sysdir='/etc/systemd/system/', log=None):
+def healthcheck_create(container, sysdir='/etc/systemd/system/',
+                       log=None, test='/openstack/healthcheck'):
     """Create a healthcheck for a service in systemd
 
     :param container: container name
@@ -147,6 +148,9 @@ def healthcheck_create(container, sysdir='/etc/systemd/system/', log=None):
 
     :param log: optional pre-defined logger for messages
     :type log: logging.RootLogger
+
+    :param test: optional test full command
+    :type test: String
     """
 
     log = log or common.configure_logging(__name__)
@@ -159,6 +163,7 @@ def healthcheck_create(container, sysdir='/etc/systemd/system/', log=None):
         'name': container,
         'service': service,
         'restart': 'restart',
+        'test': test,
     }
     with open(sysd_unit_f, 'w') as unit_file:
         os.chmod(unit_file.name, 0o644)
@@ -168,7 +173,7 @@ After=paunch-container-shutdown.service
 Requisite=%(service)s.service
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/podman exec %(name)s /openstack/healthcheck
+ExecStart=/usr/bin/podman exec %(name)s %(test)s
 [Install]
 WantedBy=multi-user.target
 """ % s_config)
