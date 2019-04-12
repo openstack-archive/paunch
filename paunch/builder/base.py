@@ -25,7 +25,7 @@ from paunch.utils import systemd
 class BaseBuilder(object):
 
     def __init__(self, config_id, config, runner, labels, log=None,
-                 cont_log_path=None):
+                 cont_log_path=None, healthcheck_disabled=False):
         self.config_id = config_id
         self.config = config
         self.labels = labels
@@ -33,6 +33,7 @@ class BaseBuilder(object):
         # Leverage pre-configured logger
         self.log = log or common.configure_logging(__name__)
         self.cont_log_path = cont_log_path
+        self.healthcheck_disabled = healthcheck_disabled
 
     def apply(self):
 
@@ -108,7 +109,8 @@ class BaseBuilder(object):
                     systemd.service_create(container=container_name,
                                            cconfig=cconfig,
                                            log=self.log)
-                    if 'healthcheck' in cconfig:
+                    if (not self.healthcheck_disabled and
+                            'healthcheck' in cconfig):
                         check = cconfig.get('healthcheck')['test']
                         systemd.healthcheck_create(container=container_name,
                                                    log=self.log, test=check)
