@@ -72,6 +72,13 @@ class Apply(command.Command):
             help=('Absolute directory path for container log. Works only for '
                   'podman container engine')
         )
+        parser.add_argument(
+            '--healthcheck-disabled',
+            dest='healthcheck_disabled',
+            action='store_true',
+            default=False,
+            help=('Whether or not we disable the containers healthchecks')
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -93,7 +100,8 @@ class Apply(command.Command):
             cont_cmd=parsed_args.default_runtime,
             log_level=log_level,
             log_file=log_file,
-            cont_log_path=parsed_args.cont_log_path
+            cont_log_path=parsed_args.cont_log_path,
+            healthcheck_disabled=parsed_args.healthcheck_disabled
         )
 
         return rc

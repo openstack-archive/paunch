@@ -108,7 +108,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             managed_by='tester',
             labels=None,
             cont_cmd='podman',
-            cont_log_path=None)
+            cont_log_path=None,
+            healthcheck_disabled=False)
         runner.assert_called_once_with('tester', cont_cmd='podman',
                                        log=mock.ANY)
         builder.assert_called_once_with(
@@ -117,7 +118,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             runner=runner.return_value,
             labels=None,
             log=mock.ANY,
-            cont_log_path=None
+            cont_log_path=None,
+            healthcheck_disabled=False
         )
         builder.return_value.apply.assert_called_once_with()
 
@@ -130,7 +132,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             managed_by='tester',
             labels=None,
             cont_cmd='podman',
-            cont_log_path='/var/log')
+            cont_log_path='/var/log',
+            healthcheck_disabled=False)
         runner.assert_called_once_with('tester', cont_cmd='podman',
                                        log=mock.ANY)
         builder.assert_called_once_with(
@@ -139,7 +142,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             runner=runner.return_value,
             labels=None,
             log=mock.ANY,
-            cont_log_path='/var/log'
+            cont_log_path='/var/log',
+            healthcheck_disabled=False
         )
         builder.return_value.apply.assert_called_once_with()
 
@@ -152,7 +156,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             managed_by='tester',
             labels={'bink': 'boop'},
             cont_cmd='podman',
-            cont_log_path=None)
+            cont_log_path=None,
+            healthcheck_disabled=False)
 
         runner.assert_called_once_with('tester', cont_cmd='podman',
                                        log=mock.ANY)
@@ -162,7 +167,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             runner=runner.return_value,
             labels={'bink': 'boop'},
             log=mock.ANY,
-            cont_log_path=None
+            cont_log_path=None,
+            healthcheck_disabled=False
         )
         builder.return_value.apply.assert_called_once_with()
 
