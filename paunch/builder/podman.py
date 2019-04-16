@@ -18,9 +18,10 @@ from paunch.builder import base
 class PodmanBuilder(base.BaseBuilder):
 
     def __init__(self, config_id, config, runner, labels=None, log=None,
-                 cont_log_path=None):
+                 cont_log_path=None, healthcheck_disabled=False):
         super(PodmanBuilder, self).__init__(config_id, config, runner,
-                                            labels, log, cont_log_path)
+                                            labels, log, cont_log_path,
+                                            healthcheck_disabled)
 
     def container_run_args(self, cmd, container):
         cconfig = self.config[container]

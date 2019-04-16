@@ -24,12 +24,14 @@ from paunch.utils import systemd
 
 
 class BaseRunner(object):
-    def __init__(self, managed_by, cont_cmd, log=None, cont_log_path=None):
+    def __init__(self, managed_by, cont_cmd, log=None, cont_log_path=None,
+                 healthcheck_disabled=False):
         self.managed_by = managed_by
         self.cont_cmd = cont_cmd
         # Leverage pre-configured logger
         self.log = log or common.configure_logging(__name__)
         self.cont_log_path = cont_log_path
+        self.healthcheck_disabled = healthcheck_disabled
         if self.cont_cmd == 'docker':
             self.log.warning('docker runtime is deprecated in Stein '
                              'and will be removed in Train.')
@@ -282,10 +284,10 @@ class DockerRunner(BaseRunner):
 class PodmanRunner(BaseRunner):
 
     def __init__(self, managed_by, cont_cmd=None, log=None,
-                 cont_log_path=None):
+                 cont_log_path=None, healthcheck_disabled=False):
         cont_cmd = cont_cmd or 'podman'
         super(PodmanRunner, self).__init__(managed_by, cont_cmd, log,
-                                           cont_log_path)
+                                           cont_log_path, healthcheck_disabled)
 
     def rename_container(self, container, name):
         # TODO(emilien) podman doesn't support rename, we'll handle it
@@ -338,6 +340,7 @@ class PodmanRunner(BaseRunner):
             runner=self,
             labels=None,
             log=self.log,
-            cont_log_path=self.cont_log_path
+            cont_log_path=self.cont_log_path,
+            healthcheck_disabled=self.healthcheck_disabled
         )
         builder.apply()
