@@ -29,7 +29,7 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
                 'uts': 'host',
                 'restart': 'always',
                 'healthcheck': {
-                    'test': '/bin/true',
+                    'test': 'ls /mydir',
                     'interval': '30s',
                     'timeout': '10s',
                     'retries': 3
@@ -53,7 +53,7 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
             ['docker', 'run', '--name', 'one',
              '--detach=true', '--env-file=/tmp/foo.env',
              '--net=host', '--ipc=host', '--pid=container:bar',
-             '--uts=host', '--health-cmd=/bin/true', '--health-interval=30s',
+             '--uts=host', '--health-cmd="ls /mydir"', '--health-interval=30s',
              '--health-timeout=10s', '--health-retries=3',
              '--privileged=true', '--restart=always', '--user=bar',
              '--log-opt=tag={{.ImageName}}/{{.Name}}/{{.ID}}',

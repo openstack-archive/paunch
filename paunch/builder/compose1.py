@@ -44,7 +44,7 @@ class ComposeV1Builder(base.BaseBuilder):
         if 'healthcheck' in cconfig:
             hconfig = cconfig['healthcheck']
             if 'test' in hconfig:
-                cmd.append('--health-cmd=%s' % hconfig['test'])
+                cmd.append('--health-cmd="%s"' % hconfig['test'])
             if 'interval' in hconfig:
                 cmd.append('--health-interval=%s' % hconfig['interval'])
             if 'timeout' in hconfig:
