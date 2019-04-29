@@ -1,0 +1,5 @@
+---
+features:
+  - |
+    paunch learns 'hostname' wich maps to podman run --hostname and
+    'extra_hosts' mapping to podman run --add-host.

@@ -36,7 +36,12 @@ class TestPodmanBuilder(base.TestBaseBuilder):
                 'mem_swappiness': '60',
                 'security_opt': 'label:disable',
                 'cap_add': ['SYS_ADMIN', 'SETUID'],
-                'cap_drop': ['NET_RAW']
+                'cap_drop': ['NET_RAW'],
+                'hostname': 'foohostname',
+                'extra_hosts': [
+                    'foohost:127.0.0.1',
+                    'barhost:127.0.0.2'
+                    ]
             }
         }
         builder = podman.PodmanBuilder('foo', config, None)
@@ -55,6 +60,9 @@ class TestPodmanBuilder(base.TestBaseBuilder):
              '--memory-swap=1G',
              '--memory-swappiness=60',
              '--security-opt=label:disable',
+             '--hostname=foohostname',
+             '--add-host=foohost:127.0.0.1',
+             '--add-host=barhost:127.0.0.2',
              '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
              'centos:7'],
             cmd
