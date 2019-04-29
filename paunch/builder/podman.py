@@ -76,6 +76,10 @@ class PodmanBuilder(base.BaseBuilder):
         self.string_arg(cconfig, cmd, 'mem_swappiness', '--memory-swappiness')
         self.string_arg(cconfig, cmd, 'security_opt', '--security-opt')
         self.string_arg(cconfig, cmd, 'stop_signal', '--stop-signal')
+        self.string_arg(cconfig, cmd, 'hostname', '--hostname')
+        for extra_host in cconfig.get('extra_hosts', []):
+            if extra_host:
+                cmd.append('--add-host=%s' % extra_host)
 
         self.string_arg(cconfig, cmd,
                         'stop_grace_period', '--stop-timeout',
