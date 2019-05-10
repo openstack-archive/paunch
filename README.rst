@@ -105,7 +105,7 @@ Paunch can also be used as a library by other tools. By default running the
 ``paunch`` command won't affect these other containers due to the different ``managed_by``
 label being set on those containers. For example if you wanted to run paunch
 commands masquerading as the
-`heat-agents <https://opendev.org/openstack/heat-agents/tree/>`_
+`heat-agents <https://opendev.org/openstack/heat-agents/src/branch/master/>`_
 `docker-cmd hook <https://opendev.org/openstack/heat-agents/src/branch/master/heat-config-docker-cmd>`_
 then you can run:
 
