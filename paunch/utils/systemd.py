@@ -20,8 +20,7 @@ from paunch import constants
 from paunch.utils import common
 
 
-def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR,
-                   log=None):
+def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
     """Create a service in systemd
 
     :param container: container name
@@ -115,18 +114,22 @@ def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
     sysd_unit_f = service + '.service'
     sysd_health_f = service + '_healthcheck.service'
     sysd_timer_f = service + '_healthcheck.timer'
-    for sysd_f in sysd_unit_f, sysd_health_f, sysd_timer_f:
+    sysd_health_req_d = sysd_unit_f + '.requires'
+    sysd_health_req_f = sysd_health_req_d + '/' + sysd_timer_f
+    for sysd_f in sysd_health_req_f, sysd_unit_f, sysd_health_f, sysd_timer_f:
         if os.path.isfile(sysdir + sysd_f):
             log.debug('Stopping and disabling systemd service for %s' %
                       service)
+            sysd_unit = os.path.basename(sysd_f)
             try:
-                subprocess.check_call(['systemctl', 'stop', sysd_f])
-                subprocess.check_call(['systemctl', 'disable', sysd_f])
+                subprocess.check_call(['systemctl', 'stop', sysd_unit])
+                subprocess.check_call(['systemctl', 'disable', sysd_unit])
             except subprocess.CalledProcessError:
                 log.exception("systemctl failed")
                 raise
             log.debug('Removing systemd unit file %s' % sysd_f)
-            os.remove(sysdir + sysd_f)
+            if os.path.exists(sysdir + sysd_f):
+                os.remove(sysdir + sysd_f)
             try:
                 subprocess.check_call(['systemctl', 'daemon-reload'])
             except subprocess.CalledProcessError:
@@ -134,6 +137,10 @@ def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
                 raise
         else:
             log.info('No systemd unit file was found for %s' % sysd_f)
+
+    if os.path.exists(os.path.join(sysdir, sysd_health_req_d)):
+            log.info('Removing %s.requires' % service)
+            os.rmdir(os.path.join(sysdir, sysd_health_req_d))
 
 
 def healthcheck_create(container, sysdir='/etc/systemd/system/',
@@ -169,7 +176,7 @@ def healthcheck_create(container, sysdir='/etc/systemd/system/',
         os.chmod(unit_file.name, 0o644)
         unit_file.write("""[Unit]
 Description=%(name)s healthcheck
-After=paunch-container-shutdown.service
+After=paunch-container-shutdown.service %(service)s.service
 Requisite=%(service)s.service
 [Service]
 Type=oneshot
@@ -213,6 +220,7 @@ def healthcheck_timer_create(container, cconfig, sysdir='/etc/systemd/system/',
         os.chmod(timer_file.name, 0o644)
         timer_file.write("""[Unit]
 Description=%(name)s container healthcheck
+PartOf=%(service)s.service
 [Timer]
 OnActiveSec=120
 OnUnitActiveSec=%(interval)s
@@ -222,6 +230,8 @@ WantedBy=timers.target""" % s_config)
     try:
         subprocess.check_call(['systemctl', 'enable', '--now',
                               healthcheck_timer])
+        subprocess.check_call(['systemctl', 'add-requires',
+                              service + '.service', healthcheck_timer])
         subprocess.check_call(['systemctl', 'daemon-reload'])
     except subprocess.CalledProcessError:
         log.exception("systemctl failed")
