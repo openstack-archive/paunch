@@ -14,10 +14,10 @@
 # under the License.
 
 import os
-import subprocess
 
 from paunch import constants
 from paunch.utils import common
+from paunch.utils import systemctl
 
 
 def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
@@ -45,8 +45,8 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
     # when removing the rpms during a cleanup by the operator.
     service = 'tripleo_' + container
 
-    wants = " ".join(str(x) + '.service' for x in
-                              cconfig.get('depends_on', []))
+    wants = " ".join(systemctl.format_name(str(x)) for x in
+                     cconfig.get('depends_on', []))
 
     restart = cconfig.get('restart', 'always')
     stop_grace_period = cconfig.get('stop_grace_period', '10')
@@ -62,7 +62,7 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
     if restart == 'unless-stopped':
         restart = 'always'
 
-    sysd_unit_f = sysdir + service + '.service'
+    sysd_unit_f = sysdir + systemctl.format_name(service)
     log.debug('Creating systemd unit file: %s' % sysd_unit_f)
     s_config = {
         'name': container,
@@ -88,9 +88,9 @@ PIDFile=/var/run/%(name)s.pid
 [Install]
 WantedBy=multi-user.target""" % s_config)
     try:
-        subprocess.check_call(['systemctl', 'daemon-reload'])
-        subprocess.check_call(['systemctl', 'enable', '--now', service])
-    except subprocess.CalledProcessError:
+        systemctl.daemon_reload()
+        systemctl.enable(service, now=True)
+    except systemctl.SystemctlException:
         log.exception("systemctl failed")
         raise
 
@@ -111,8 +111,8 @@ def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
     # prefix is explained in the service_create().
     service = 'tripleo_' + container
 
-    sysd_unit_f = service + '.service'
-    sysd_health_f = service + '_healthcheck.service'
+    sysd_unit_f = systemctl.format_name(service)
+    sysd_health_f = systemctl.format_name(service + '_healthcheck')
     sysd_timer_f = service + '_healthcheck.timer'
     sysd_health_req_d = sysd_unit_f + '.requires'
     sysd_health_req_f = sysd_health_req_d + '/' + sysd_timer_f
@@ -122,17 +122,17 @@ def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
                       service)
             sysd_unit = os.path.basename(sysd_f)
             try:
-                subprocess.check_call(['systemctl', 'stop', sysd_unit])
-                subprocess.check_call(['systemctl', 'disable', sysd_unit])
-            except subprocess.CalledProcessError:
+                systemctl.stop(sysd_unit)
+                systemctl.disable(sysd_unit)
+            except systemctl.SystemctlException:
                 log.exception("systemctl failed")
                 raise
             log.debug('Removing systemd unit file %s' % sysd_f)
             if os.path.exists(sysdir + sysd_f):
                 os.remove(sysdir + sysd_f)
             try:
-                subprocess.check_call(['systemctl', 'daemon-reload'])
-            except subprocess.CalledProcessError:
+                systemctl.daemon_reload()
+            except systemctl.SystemctlException:
                 log.exception("systemctl failed")
                 raise
         else:
@@ -163,7 +163,7 @@ def healthcheck_create(container, sysdir='/etc/systemd/system/',
     log = log or common.configure_logging(__name__)
 
     service = 'tripleo_' + container
-    healthcheck = service + '_healthcheck.service'
+    healthcheck = systemctl.format_name(service + '_healthcheck')
     sysd_unit_f = sysdir + healthcheck
     log.debug('Creating systemd unit file: %s' % sysd_unit_f)
     s_config = {
@@ -228,11 +228,10 @@ RandomizedDelaySec=%(randomize)s
 [Install]
 WantedBy=timers.target""" % s_config)
     try:
-        subprocess.check_call(['systemctl', 'enable', '--now',
-                              healthcheck_timer])
-        subprocess.check_call(['systemctl', 'add-requires',
-                              service + '.service', healthcheck_timer])
-        subprocess.check_call(['systemctl', 'daemon-reload'])
-    except subprocess.CalledProcessError:
+        systemctl.enable(healthcheck_timer, now=True)
+        systemctl.add_requires(systemctl.format_name(service),
+                               healthcheck_timer)
+        systemctl.daemon_reload()
+    except systemctl.SystemctlException:
         log.exception("systemctl failed")
         raise
