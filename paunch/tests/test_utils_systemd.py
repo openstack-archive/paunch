@@ -70,23 +70,36 @@ class TestUtilsSystemd(base.TestCase):
 
         os.rmdir(tempdir)
 
+    @mock.patch('os.rmdir', autospec=True)
     @mock.patch('os.remove', autospec=True)
+    @mock.patch('os.path.exists', autospec=True)
     @mock.patch('os.path.isfile', autospec=True)
     @mock.patch('subprocess.check_call', autospec=True)
     def test_service_delete(self, mock_subprocess_check_call, mock_isfile,
-                            mock_rm):
+                            mock_exists, mock_rm, mock_rmdir):
         mock_isfile.return_value = True
         container = 'my_app'
         service = 'tripleo_' + container
         tempdir = tempfile.mkdtemp()
+        service_requires_d = service + '.service.requires'
+        service_health_timer_f = service + '_healthcheck.timer'
 
         systemd.service_delete(container, tempdir)
         mock_rm.assert_has_calls([
+            mock.call(tempdir + service_requires_d + '/' +
+                      service_health_timer_f),
             mock.call(tempdir + service + '.service'),
             mock.call(tempdir + service + '_healthcheck.service'),
             mock.call(tempdir + service + '_healthcheck.timer'),
         ])
+        mock_rmdir.assert_has_calls([
+            mock.call(os.path.join(tempdir, service_requires_d)),
+        ])
         mock_subprocess_check_call.assert_has_calls([
+            mock.call(['systemctl', 'stop', service + '_healthcheck.timer']),
+            mock.call(['systemctl', 'disable',
+                      service + '_healthcheck.timer']),
+            mock.call(['systemctl', 'daemon-reload']),
             mock.call(['systemctl', 'stop', service + '.service']),
             mock.call(['systemctl', 'disable', service + '.service']),
             mock.call(['systemctl', 'daemon-reload']),
@@ -144,10 +157,13 @@ class TestUtilsSystemd(base.TestCase):
         systemd.healthcheck_timer_create(container, cconfig, tempdir)
         unit = open(sysd_unit_f, 'rt').read()
 
+        self.assertIn('PartOf=%s.service' % service, unit)
         self.assertIn('OnActiveSec=120', unit)
         self.assertIn('OnUnitActiveSec=15', unit)
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
         mock_subprocess_check_call.assert_has_calls([
             mock.call(['systemctl', 'enable', '--now', healthcheck_timer]),
+            mock.call(['systemctl', 'add-requires', service + '.service',
+                      healthcheck_timer]),
             mock.call(['systemctl', 'daemon-reload']),
         ])
