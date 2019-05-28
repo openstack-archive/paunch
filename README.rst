@@ -6,7 +6,7 @@ Utility to launch and manage containers using YAML based configuration data
 
 * Free software: Apache license
 * Documentation: https://docs.openstack.org/developer/paunch
-* Source: https://git.openstack.org/cgit/openstack/paunch
+* Source: https://opendev.org/openstack/paunch
 * Bugs: https://bugs.launchpad.net/paunch
 * Release Notes: https://docs.openstack.org/releasenotes/paunch
 
@@ -105,8 +105,8 @@ Paunch can also be used as a library by other tools. By default running the
 ``paunch`` command won't affect these other containers due to the different ``managed_by``
 label being set on those containers. For example if you wanted to run paunch
 commands masquerading as the
-`heat-agents <https://git.openstack.org/cgit/openstack/heat-agents/tree/>`_
-`docker-cmd hook <https://git.openstack.org/cgit/openstack/heat-agents/tree/heat-config-docker-cmd>`_
+`heat-agents <https://opendev.org/openstack/heat-agents/tree/>`_
+`docker-cmd hook <https://opendev.org/openstack/heat-agents/src/branch/master/heat-config-docker-cmd>`_
 then you can run:
 
 ::
