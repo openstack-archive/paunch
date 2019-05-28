@@ -14,6 +14,7 @@
 # under the License.
 
 import os
+import shutil
 
 from paunch import constants
 from paunch.utils import common
@@ -115,32 +116,26 @@ def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
     sysd_health_f = systemctl.format_name(service + '_healthcheck')
     sysd_timer_f = service + '_healthcheck.timer'
     sysd_health_req_d = sysd_unit_f + '.requires'
-    sysd_health_req_f = sysd_health_req_d + '/' + sysd_timer_f
-    for sysd_f in sysd_health_req_f, sysd_unit_f, sysd_health_f, sysd_timer_f:
+
+    for sysd_f in sysd_unit_f, sysd_health_f, sysd_timer_f:
         if os.path.isfile(sysdir + sysd_f):
             log.debug('Stopping and disabling systemd service for %s' %
                       service)
-            sysd_unit = os.path.basename(sysd_f)
             try:
-                systemctl.stop(sysd_unit)
-                systemctl.disable(sysd_unit)
+                systemctl.stop(sysd_f)
+                systemctl.disable(sysd_f)
             except systemctl.SystemctlException:
                 log.exception("systemctl failed")
                 raise
             log.debug('Removing systemd unit file %s' % sysd_f)
-            if os.path.exists(sysdir + sysd_f):
-                os.remove(sysdir + sysd_f)
-            try:
-                systemctl.daemon_reload()
-            except systemctl.SystemctlException:
-                log.exception("systemctl failed")
-                raise
+            os.remove(sysdir + sysd_f)
         else:
             log.info('No systemd unit file was found for %s' % sysd_f)
 
+    # Now that the service is removed, we can remove its ".requires"
     if os.path.exists(os.path.join(sysdir, sysd_health_req_d)):
-            log.info('Removing %s.requires' % service)
-            os.rmdir(os.path.join(sysdir, sysd_health_req_d))
+            log.info('Removing healthcheck require for %s' % service)
+            shutil.rmtree(os.path.join(sysdir, sysd_health_req_d))
 
 
 def healthcheck_create(container, sysdir='/etc/systemd/system/',
