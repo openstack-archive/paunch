@@ -72,6 +72,11 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
         'stop_grace_period': stop_grace_period,
         'sys_exec': '\n'.join(['%s=%s' % (x, y) for x, y in sys_exec.items()]),
     }
+    # Ensure we don't have some trailing .requires directory and content for
+    # this service
+    if os.path.exists(sysd_unit_f + '.requires'):
+        shutil.rmtree(sysd_unit_f + '.requires')
+
     with open(sysd_unit_f, 'w') as unit_file:
         os.chmod(unit_file.name, 0o644)
         unit_file.write("""[Unit]

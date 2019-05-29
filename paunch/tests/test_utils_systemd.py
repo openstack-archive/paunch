@@ -23,9 +23,12 @@ from paunch.utils import systemd
 
 class TestUtilsSystemd(base.TestCase):
 
+    @mock.patch('shutil.rmtree', autospec=True)
+    @mock.patch('os.path.exists', autospec=True)
     @mock.patch('subprocess.check_call', autospec=True)
     @mock.patch('os.chmod')
-    def test_service_create(self, mock_chmod, mock_subprocess_check_call):
+    def test_service_create(self, mock_chmod, mock_subprocess_check_call,
+                            mock_exists, mock_rmtree):
         container = 'my_app'
         service = 'tripleo_' + container
         cconfig = {'depends_on': ['something'], 'restart': 'unless-stopped',
@@ -44,6 +47,10 @@ class TestUtilsSystemd(base.TestCase):
         mock_subprocess_check_call.assert_has_calls([
             mock.call(['systemctl', 'daemon-reload']),
             mock.call(['systemctl', 'enable', '--now', service]),
+        ])
+
+        mock_rmtree.assert_has_calls([
+            mock.call(sysd_unit_f + '.requires')
         ])
 
         os.rmdir(tempdir)
