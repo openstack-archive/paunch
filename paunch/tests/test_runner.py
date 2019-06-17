@@ -424,3 +424,13 @@ class PodmanRunner(TestBaseRunner):
         self.assert_execute(
             popen, ['podman', 'image', 'exists', 'one']
         )
+
+    @mock.patch('subprocess.Popen')
+    def test_container_exist(self, popen):
+        self.mock_execute(popen, '', '', 0)
+
+        self.runner = runner.PodmanRunner('tester')
+        self.runner.container_exist('one')
+        self.assert_execute(
+            popen, ['podman', 'container', 'exists', 'one']
+        )

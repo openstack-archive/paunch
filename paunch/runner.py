@@ -273,6 +273,11 @@ class DockerRunner(BaseRunner):
                          "by %s" % self.cont_cmd)
         return True
 
+    def container_exist(self, name, quiet=False):
+        self.log.warning("container_exist isn't supported "
+                         "by %s" % self.cont_cmd)
+        return True
+
 
 class PodmanRunner(BaseRunner):
 
@@ -340,5 +345,10 @@ class PodmanRunner(BaseRunner):
 
     def image_exist(self, name, quiet=False):
         cmd = ['podman', 'image', 'exists', name]
+        (_, _, returncode) = self.execute(cmd, self.log, quiet)
+        return returncode == 0
+
+    def container_exist(self, name, quiet=False):
+        cmd = ['podman', 'container', 'exists', name]
         (_, _, returncode) = self.execute(cmd, self.log, quiet)
         return returncode == 0
