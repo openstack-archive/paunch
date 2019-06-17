@@ -89,25 +89,13 @@ class BaseRunner(object):
 
         return [c for c in cmd_stdout.split()]
 
-    def image_exist(self, name, quiet=False):
-        # the command only exists in podman.
-        if self.cont_cmd != 'podman':
-            self.log.warning("image_exist isn't supported "
-                             "by %s" % self.cont_cmd)
-            return 0
-        cmd = ['podman', 'image', 'exists', name]
-        (cmd_stdout, cmd_stderr, returncode) = self.execute(
-            cmd, self.log, quiet)
-        return returncode
-
     def inspect(self, name, output_format=None, o_type='container',
                 quiet=False):
-        # If we're being asked to inspect a container image, we
+        # In podman, if we're being asked to inspect a container image, we
         # want to verify that the image exists before inspecting it.
         # Context: https://github.com/containers/libpod/issues/1845
         if o_type == 'image':
-            img_exist = self.image_exist(name)
-            if img_exist != 0:
+            if not self.image_exist(name):
                 return
         cmd = [self.cont_cmd, 'inspect', '--type', o_type]
         if output_format:
@@ -280,6 +268,11 @@ class DockerRunner(BaseRunner):
             self.log.error('Error renaming container: %s' % container)
             self.log.error(cmd_stderr)
 
+    def image_exist(self, name, quiet=False):
+        self.log.warning("image_exist isn't supported "
+                         "by %s" % self.cont_cmd)
+        return True
+
 
 class PodmanRunner(BaseRunner):
 
@@ -344,3 +337,8 @@ class PodmanRunner(BaseRunner):
             healthcheck_disabled=self.healthcheck_disabled
         )
         builder.apply()
+
+    def image_exist(self, name, quiet=False):
+        cmd = ['podman', 'image', 'exists', name]
+        (_, _, returncode) = self.execute(cmd, self.log, quiet)
+        return returncode == 0
