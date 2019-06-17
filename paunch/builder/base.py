@@ -226,10 +226,15 @@ class BaseBuilder(object):
         for image in sorted(images):
 
             # only pull if the image does not exist locally
-            if self.runner.inspect(image,
-                                   output_format='exists',
-                                   o_type='image'):
-                continue
+            if self.runner.cont_cmd == 'docker':
+                if self.runner.inspect(image,
+                                       output_format='exists',
+                                       o_type='image'):
+                    continue
+            else:
+                img_exist = self.runner.image_exist(image)
+                if img_exist == 0:
+                    continue
 
             try:
                 (cmd_stdout, cmd_stderr) = self._pull(image)

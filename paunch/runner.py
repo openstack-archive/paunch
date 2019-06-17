@@ -117,10 +117,17 @@ class BaseRunner(object):
 
     def unique_container_name(self, container):
         container_name = container
-        while self.inspect(container_name, output_format='exists', quiet=True):
-            suffix = ''.join(random.choice(
-                string.ascii_lowercase + string.digits) for i in range(8))
-            container_name = '%s-%s' % (container, suffix)
+        if self.cont_cmd == 'docker':
+            while self.inspect(container_name, output_format='exists',
+                               quiet=True):
+                suffix = ''.join(random.choice(
+                    string.ascii_lowercase + string.digits) for i in range(8))
+                container_name = '%s-%s' % (container, suffix)
+        else:
+            while self.container_exist(container_name, quiet=True):
+                suffix = ''.join(random.choice(
+                    string.ascii_lowercase + string.digits) for i in range(8))
+                container_name = '%s-%s' % (container, suffix)
         return container_name
 
     def discover_container_name(self, container, cid):
