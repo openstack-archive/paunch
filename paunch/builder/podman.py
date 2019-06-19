@@ -52,7 +52,7 @@ class PodmanBuilder(base.BaseBuilder):
                 if not os.path.exists(self.cont_log_path):
                     os.makedirs(self.cont_log_path)
                 log_path = os.path.join(self.cont_log_path, delegate)
-                logging = ['--log-driver', 'json-file',
+                logging = ['--log-driver', 'k8s-file',
                            '--log-opt', 'path=%s.log' % log_path]
                 cmd.extend(logging)
             else:
