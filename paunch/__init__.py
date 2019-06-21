@@ -118,6 +118,18 @@ def debug(config_id, container_name, action, config, managed_by, labels=None,
             r.unique_container_name(container_name)
         ]
         builder.docker_run_args(cmd, container_name)
+
+        if '--health-cmd' in cmd:
+            health_check_arg_index = cmd.index('--health-cmd') + 1
+
+            # The argument given needs to be quoted to work properly with a
+            # copy and paste of the full command.
+            try:
+                cmd[health_check_arg_index] = (
+                    '"%s"' % cmd[health_check_arg_index])
+            except IndexError:
+                LOG.warning("No argument provided to --health-cmd.")
+
         print(' '.join(cmd))
     elif action == 'run':
         cmd = [
