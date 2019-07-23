@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import mock
+
 from paunch.builder import compose1
 from paunch.tests import test_builder_base as tbb
 
@@ -74,5 +76,43 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
              '--add-host=barhost:127.0.0.2',
              '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
              'centos:7'],
+            cmd
+        )
+
+    @mock.patch('os.path.exists')
+    def test_cont_run_args_validation_true(self, path_exists):
+        path_exists.return_value = True
+        config = {
+            'one': {
+                'image': 'foo',
+                'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
+            }
+        }
+        builder = compose1.ComposeV1Builder('foo', config, None)
+
+        cmd = ['docker']
+        self.assertTrue(builder.container_run_args(cmd, 'one'))
+        self.assertEqual(
+            ['docker', '--detach=true',
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
+            cmd
+        )
+
+    @mock.patch('os.path.exists')
+    def test_cont_run_args_validation_false(self, path_exists):
+        path_exists.return_value = False
+        config = {
+            'one': {
+                'image': 'foo',
+                'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
+            }
+        }
+        builder = compose1.ComposeV1Builder('foo', config, None)
+
+        cmd = ['docker']
+        self.assertFalse(builder.container_run_args(cmd, 'one'))
+        self.assertEqual(
+            ['docker', '--detach=true',
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
             cmd
         )

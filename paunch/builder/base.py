@@ -84,10 +84,15 @@ class BaseBuilder(object):
                 ]
 
                 self.label_arguments(cmd, container)
-                self.container_run_args(cmd, container)
+                validations_passed = self.container_run_args(cmd, container)
             elif action == 'exec':
                 cmd = [self.runner.cont_cmd, 'exec']
-                self.cont_exec_args(cmd, container)
+                validations_passed = self.cont_exec_args(cmd, container)
+
+            if not validations_passed:
+                self.log.debug('Validations failed. Skipping container: %s' %
+                               container)
+                continue
 
             (cmd_stdout, cmd_stderr, returncode) = self.runner.execute(
                 cmd, self.log)
@@ -200,6 +205,13 @@ class BaseBuilder(object):
                 cmd.append('%s=%s' % (arg, v))
 
     def cont_exec_args(self, cmd, container):
+        """Prepare the exec command args, from the container configuration.
+
+        :param cmd: The list of command options to be modified
+        :param container: A dict with container configurations
+        :returns: True if configuration is valid, otherwise False
+        """
+
         cconfig = self.config[container]
         if 'privileged' in cconfig:
             cmd.append('--privileged=%s' % str(cconfig['privileged']).lower())
@@ -212,6 +224,8 @@ class BaseBuilder(object):
             command[0] = self.runner.discover_container_name(
                 command[0], self.config_id)
         cmd.extend(command)
+
+        return True
 
     def pull_missing_images(self, stdout, stderr):
         images = set()

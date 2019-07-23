@@ -449,7 +449,9 @@ three-12345678 three''', '', 0),
             builder.container_run_args(cmd, container)
             self.assertIn(arg, cmd)
 
-    def test_container_run_args_lists(self):
+    @mock.patch('os.path.exists')
+    def test_container_run_args_lists(self, path_exists):
+        path_exists.return_value = True
         config = {
             'one': {
                 'image': 'centos:7',

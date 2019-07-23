@@ -24,6 +24,12 @@ class PodmanBuilder(base.BaseBuilder):
                                             healthcheck_disabled)
 
     def container_run_args(self, cmd, container):
+        """Prepare the run command args, from the container configuration.
+
+        :param cmd: The list of command options to be modified
+        :param container: A dict with container configurations
+        :returns: True if configuration is valid, otherwise False
+        """
         cconfig = self.config[container]
 
         # write out a pid file so we can restart the container via systemd
@@ -91,3 +97,5 @@ class PodmanBuilder(base.BaseBuilder):
 
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))
+
+        return True
