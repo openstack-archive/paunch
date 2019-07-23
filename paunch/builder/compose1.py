@@ -11,6 +11,8 @@
 #   under the License.
 #
 
+import os
+
 from paunch.builder import base
 
 
@@ -21,6 +23,12 @@ class ComposeV1Builder(base.BaseBuilder):
                                                labels, log)
 
     def container_run_args(self, cmd, container):
+        """Prepare the run command args, from the container configuration.
+
+        :param cmd: The list of command options to be modified
+        :param container: A dict with container configurations
+        :returns: True if configuration is valid, otherwise False
+        """
         cconfig = self.config[container]
         if cconfig.get('detach', True):
             cmd.append('--detach=true')
@@ -101,3 +109,19 @@ class ComposeV1Builder(base.BaseBuilder):
 
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))
+
+        # NOTE(xek): If the file to be mounted doesn't exist, Docker version
+        # 1.13.1 creates a directory in it's place. This behavior is different
+        # then Podman, which throws an error. We want to replicate the Podman
+        # behavior. Creating directories in place of files creates errors which
+        # are very difficult to diagnose.
+        for volume in cconfig.get('volumes', []):
+            host_path = volume.split(':', 1)[0]
+            if host_path and not os.path.exists(host_path):
+                self.log.error("Error running %s.\n" % cmd)
+                self.log.error('stderr: Error: error checking path "%s":'
+                               ' stat %s: no such file or directory\n' % (
+                                   host_path, host_path))
+                return False
+
+        return True
