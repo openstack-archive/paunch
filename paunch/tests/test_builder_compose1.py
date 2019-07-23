@@ -453,6 +453,44 @@ three-12345678 three''', '', 0),
             cmd
         )
 
+    @mock.patch('os.path.exists')
+    def test_docker_run_args_validation_true(self, path_exists):
+        path_exists.return_value = True
+        config = {
+            'one': {
+                'image': 'foo',
+                'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
+            }
+        }
+        builder = compose1.ComposeV1Builder('foo', config, None)
+
+        cmd = ['docker']
+        self.assertTrue(builder.docker_run_args(cmd, 'one'))
+        self.assertEqual(
+            ['docker', '--detach=true',
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
+            cmd
+        )
+
+    @mock.patch('os.path.exists')
+    def test_docker_run_args_validation_false(self, path_exists):
+        path_exists.return_value = False
+        config = {
+            'one': {
+                'image': 'foo',
+                'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
+            }
+        }
+        builder = compose1.ComposeV1Builder('foo', config, None)
+
+        cmd = ['docker']
+        self.assertFalse(builder.docker_run_args(cmd, 'one'))
+        self.assertEqual(
+            ['docker', '--detach=true',
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
+            cmd
+        )
+
     def test_durations(self):
         config = {
             'a': {'stop_grace_period': 123},
@@ -484,7 +522,9 @@ three-12345678 three''', '', 0),
             builder.docker_run_args(cmd, container)
             self.assertIn(arg, cmd)
 
-    def test_docker_run_args_lists(self):
+    @mock.patch('os.path.exists')
+    def test_docker_run_args_lists(self, path_exists):
+        path_exists.return_value = True
         config = {
             'one': {
                 'image': 'centos:7',
