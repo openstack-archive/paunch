@@ -155,6 +155,7 @@ class DockerRunner(object):
             suffix = ''.join(random.choice(
                 string.ascii_lowercase + string.digits) for i in range(8))
             container_name = '%s-%s' % (container, suffix)
+            break
         return container_name
 
     def discover_container_name(self, container, cid):
