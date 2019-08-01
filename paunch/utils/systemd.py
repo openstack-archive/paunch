@@ -20,6 +20,8 @@ from paunch import constants
 from paunch.utils import common
 from paunch.utils import systemctl
 
+DROP_IN_MARKER_FILE = '/etc/sysconfig/podman_drop_in'
+
 
 def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
     """Create a service in systemd
@@ -63,10 +65,21 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
     if restart == 'unless-stopped':
         restart = 'always'
 
+    # If the service depends on other services, it must be stopped
+    # in a specific order. The host can be configured to prevent
+    # systemd from stopping the associated systemd scopes too early,
+    # so make sure to generate the start command accordingly.
+    if (len(cconfig.get('depends_on', [])) > 0 and
+            os.path.exists(DROP_IN_MARKER_FILE)):
+        start_cmd = '/usr/libexec/paunch-start-podman-container %s' % container
+    else:
+        start_cmd = '/usr/bin/podman start %s' % container
+
     sysd_unit_f = sysdir + systemctl.format_name(service)
     log.debug('Creating systemd unit file: %s' % sysd_unit_f)
     s_config = {
         'name': container,
+        'start_cmd': start_cmd,
         'wants': wants,
         'restart': restart,
         'stop_grace_period': stop_grace_period,
@@ -85,7 +98,7 @@ After=paunch-container-shutdown.service
 Wants=%(wants)s
 [Service]
 Restart=%(restart)s
-ExecStart=/usr/bin/podman start %(name)s
+ExecStart=%(start_cmd)s
 ExecStop=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
 KillMode=none
 Type=forking
