@@ -123,11 +123,13 @@ class BaseRunner(object):
                 suffix = ''.join(random.choice(
                     string.ascii_lowercase + string.digits) for i in range(8))
                 container_name = '%s-%s' % (container, suffix)
+                break
         else:
             while self.container_exist(container_name, quiet=True):
                 suffix = ''.join(random.choice(
                     string.ascii_lowercase + string.digits) for i in range(8))
                 container_name = '%s-%s' % (container, suffix)
+                break
         return container_name
 
     def discover_container_name(self, container, cid):
