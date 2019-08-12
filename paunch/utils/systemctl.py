@@ -13,6 +13,7 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 import subprocess
+import tenacity
 
 from paunch.utils import common
 
@@ -45,12 +46,33 @@ def daemon_reload(log=None):
     systemctl(['daemon-reload'], log)
 
 
+def reset_failed(service, log=None):
+    systemctl(['reset-failed', service], log)
+
+
+# NOTE(bogdando): this implements a crash-loop with reset-failed
+# counters approach that provides an efficient feature parity to the
+# classic rate limiting, shall we want to implement that for the
+# systemctl command wrapper instead.
+@tenacity.retry(  # Retry up to 5 times with jittered exponential backoff
+    reraise=True,
+    retry=tenacity.retry_if_exception_type(
+        SystemctlException
+    ),
+    wait=tenacity.wait_random_exponential(multiplier=1, max=10),
+    stop=tenacity.stop_after_attempt(5)
+)
 def enable(service, now=True, log=None):
     cmd = ['enable']
     if now:
         cmd.append('--now')
     cmd.append(service)
-    systemctl(cmd, log)
+    try:
+        systemctl(cmd, log)
+    except SystemctlException as err:
+        # Reset failure counters for the service unit and retry
+        reset_failed(service, log)
+        raise SystemctlException(str(err))
 
 
 def disable(service, log=None):
