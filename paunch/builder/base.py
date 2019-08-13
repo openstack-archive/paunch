@@ -105,7 +105,9 @@ class BaseBuilder(object):
                 ]
                 self.label_arguments(cmd, container)
                 self.log.debug("Start container {}.".format(container))
-                validations_passed = self.container_run_args(cmd, container)
+                validations_passed = self.container_run_args(cmd,
+                                                             container,
+                                                             container_name)
             elif action == 'exec':
                 cmd = [self.runner.cont_cmd, 'exec']
                 validations_passed = self.cont_exec_args(cmd, container)
