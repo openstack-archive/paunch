@@ -23,17 +23,24 @@ class PodmanBuilder(base.BaseBuilder):
                                             labels, log, cont_log_path,
                                             healthcheck_disabled)
 
-    def container_run_args(self, cmd, container):
+    def container_run_args(self, cmd, container, delegate=None):
         """Prepare the run command args, from the container configuration.
 
         :param cmd: The list of command options to be modified
         :param container: A dict with container configurations
+        :param delegate: A predictable/unique name of the actual container
         :returns: True if configuration is valid, otherwise False
         """
+        if delegate and container != delegate:
+            self.log.debug("Container {} has a delegate "
+                           "{}".format(container, delegate))
+        if not delegate:
+            delegate = container
         cconfig = self.config[container]
 
-        # write out a pid file so we can restart the container via systemd
-        cmd.append('--conmon-pidfile=/var/run/{}.pid'.format(container))
+        # write out a pid file so we can restart the container delegate
+        # via systemd
+        cmd.append('--conmon-pidfile=/var/run/{}.pid'.format(delegate))
 
         if cconfig.get('detach', True):
             cmd.append('--detach=true')
@@ -43,7 +50,7 @@ class PodmanBuilder(base.BaseBuilder):
 
                 if not os.path.exists(self.cont_log_path):
                     os.makedirs(self.cont_log_path)
-                log_path = os.path.join(self.cont_log_path, container)
+                log_path = os.path.join(self.cont_log_path, delegate)
                 logging = ['--log-driver', 'k8s-file',
                            '--log-opt', 'path=%s.log' % log_path]
                 cmd.extend(logging)
