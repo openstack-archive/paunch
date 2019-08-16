@@ -38,10 +38,10 @@ master_doc = 'index'
 # openstackdocstheme options
 repository_name = 'openstack/paunch'
 bug_project = 'paunch'
-bug_tag = 'docs'
+bug_tag = ''
 
 # General information about the project.
-project = u'paunch'
+
 copyright = u'2016, OpenStack Foundation'
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
@@ -62,15 +62,15 @@ html_theme = 'openstackdocs'
 # html_static_path = ['static']
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = '%sdoc' % project
+htmlhelp_basename = 'paunchdoc'
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass
 # [howto/manual]).
 latex_documents = [
     ('index',
-     '%s.tex' % project,
-     u'%s Documentation' % project,
+     'paunch.tex',
+     u'paunch Documentation',
      u'OpenStack Foundation', 'manual'),
 ]
 
