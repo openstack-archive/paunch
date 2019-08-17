@@ -187,13 +187,14 @@ def debug(config_id, container_name, action, config, managed_by, labels=None,
             log=log
         )
     if action == 'print-cmd':
+        uname = r.unique_container_name(container_name)
         cmd = [
             r.cont_cmd,
             'run',
             '--name',
-            r.unique_container_name(container_name)
+            uname
         ]
-        builder.container_run_args(cmd, container_name)
+        builder.container_run_args(cmd, container_name, uname)
 
         if '--health-cmd' in cmd:
             health_check_arg_index = cmd.index('--health-cmd') + 1
@@ -208,13 +209,14 @@ def debug(config_id, container_name, action, config, managed_by, labels=None,
 
         print(' '.join(cmd))
     elif action == 'run':
+        uname = r.unique_container_name(container_name)
         cmd = [
             r.cont_cmd,
             'run',
             '--name',
-            r.unique_container_name(container_name)
+            uname
         ]
-        if builder.container_run_args(cmd, container_name):
+        if builder.container_run_args(cmd, container_name, uname):
             return r.execute_interactive(cmd, log)
     elif action == 'dump-yaml':
         print(yaml.safe_dump(config, default_flow_style=False))

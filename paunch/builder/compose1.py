@@ -22,13 +22,18 @@ class ComposeV1Builder(base.BaseBuilder):
         super(ComposeV1Builder, self).__init__(config_id, config, runner,
                                                labels, log)
 
-    def container_run_args(self, cmd, container):
+    def container_run_args(self, cmd, container, delegate=None):
         """Prepare the run command args, from the container configuration.
 
         :param cmd: The list of command options to be modified
         :param container: A dict with container configurations
+        :delegate: A compatibility parameter for podman, does nothing here
         :returns: True if configuration is valid, otherwise False
         """
+        if delegate and container != delegate:
+            self.log.debug("Delegate {} of container {} has no special "
+                           "meanings for this context and will be "
+                           "ignored".format(delegate, container))
         cconfig = self.config[container]
         if cconfig.get('detach', True):
             cmd.append('--detach=true')
