@@ -170,7 +170,8 @@ class TestBaseBuilder(base.TestCase):
             ),
             # execute within four
             mock.call(
-                ['docker', 'exec', 'four-12345678', 'ls', '-l', '/'], mock.ANY
+                ['docker', 'exec', 'four-12345678', 'ls', '-l',
+                 '/'], mock.ANY
             ),
         ])
 
@@ -318,7 +319,8 @@ three-12345678 three''', '', 0),
             ),
             # execute within four
             mock.call(
-                ['docker', 'exec', 'four-12345678', 'ls', '-l', '/'], mock.ANY
+                ['docker', 'exec', 'four-12345678', 'ls', '-l',
+                 '/'], mock.ANY
             ),
         ])
 
@@ -503,7 +505,7 @@ three-12345678 three''', '', 0),
             'foo', config, runner.return_value)
 
         cmd = ['docker', 'exec']
-        self.builder.cont_exec_args(cmd, 'one')
+        self.builder.cont_exec_args(cmd, 'one', 'one-12345678')
         self.assertEqual(
             ['docker', 'exec',
              '--privileged=true', '--user=bar',
