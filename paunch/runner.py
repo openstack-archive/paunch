@@ -176,11 +176,29 @@ class DockerRunner(object):
             '{{.Names}}'
         ]
         (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd, self.log)
-        if returncode != 0:
-            return container
-        names = cmd_stdout.split()
-        if names:
-            return names[0]
+        if returncode == 0:
+            names = cmd_stdout.split()
+            if names:
+                return names[0]
+        self.log.warning('Did not find container with "%s" - retrying without '
+                         'config_id' % cmd)
+
+        cmd = [
+            self.docker_cmd,
+            'ps',
+            '-a',
+            '--filter',
+            'label=container_name=%s' % container,
+            '--format',
+            '{{.Names}}'
+        ]
+        (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd, self.log)
+        if returncode == 0:
+            names = cmd_stdout.split()
+            if names:
+                return names[0]
+
+        self.log.warning('Did not find container with "%s"' % cmd)
         return container
 
     def delete_missing_configs(self, config_ids):
