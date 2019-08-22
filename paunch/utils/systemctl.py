@@ -50,6 +50,10 @@ def reset_failed(service, log=None):
     systemctl(['reset-failed', service], log)
 
 
+def is_active(service, log=None):
+    systemctl(['is-active', '-q', service], log)
+
+
 # NOTE(bogdando): this implements a crash-loop with reset-failed
 # counters approach that provides an efficient feature parity to the
 # classic rate limiting, shall we want to implement that for the
