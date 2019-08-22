@@ -42,6 +42,13 @@ class TestUtilsSystemctl(base.TestCase):
         ])
 
     @mock.patch('subprocess.check_call', autospec=True)
+    def test_is_active(self, mock_subprocess_check_call):
+        systemctl.is_active('foo')
+        mock_subprocess_check_call.assert_has_calls([
+            mock.call(['systemctl', 'is-active', '-q', 'foo']),
+        ])
+
+    @mock.patch('subprocess.check_call', autospec=True)
     def test_enable(self, mock_subprocess_check_call):
         test = 'test'
         systemctl.enable(test, now=True)

@@ -17,9 +17,11 @@ import json
 import random
 import string
 import subprocess
+import time
 
 from paunch.builder import podman
 from paunch.utils import common
+from paunch.utils import systemctl
 from paunch.utils import systemd
 
 
@@ -145,11 +147,29 @@ class BaseRunner(object):
             '{{.Names}}'
         ]
         (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd, self.log)
-        if returncode != 0:
-            return container
-        names = cmd_stdout.split()
-        if names:
-            return names[0]
+        if returncode == 0:
+            names = cmd_stdout.split()
+            if names:
+                return names[0]
+        self.log.warning('Did not find container with "%s" - retrying without '
+                         'config_id' % cmd)
+
+        cmd = [
+            self.cont_cmd,
+            'ps',
+            '-a',
+            '--filter',
+            'label=container_name=%s' % container,
+            '--format',
+            '{{.Names}}'
+        ]
+        (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd, self.log)
+        if returncode == 0:
+            names = cmd_stdout.split()
+            if names:
+                return names[0]
+
+        self.log.warning('Did not find container with "%s"' % cmd)
         return container
 
     def delete_missing_configs(self, config_ids):
@@ -287,6 +307,11 @@ class DockerRunner(BaseRunner):
                          "by %s" % self.cont_cmd)
         return True
 
+    def container_running(self, container):
+        self.log.warning("container_running isn't supported "
+                         "by %s" % self.cont_cmd)
+        return True
+
 
 class PodmanRunner(BaseRunner):
 
@@ -361,3 +386,44 @@ class PodmanRunner(BaseRunner):
         cmd = ['podman', 'container', 'exists', name]
         (_, _, returncode) = self.execute(cmd, self.log, quiet)
         return returncode == 0
+
+    def container_running(self, container):
+        service_name = 'tripleo_' + container + '.service'
+        try:
+            systemctl.is_active(service_name)
+            self.log.debug('Unit %s is running' % service_name)
+            return True
+        except systemctl.SystemctlException:
+            chk_cmd = [
+                self.cont_cmd,
+                'ps',
+                '--filter',
+                'label=container_name=%s' % container,
+                '--format',
+                '{{.Names}}'
+            ]
+            cmd_stdout = ''
+            returncode = -1
+            count = 1
+            while (not cmd_stdout or returncode != 0) and count <= 5:
+                self.log.warning('Attempt %i to check if %s is '
+                                 'running' % (count, container))
+                # at the first retry, we will force a sync with the OCI runtime
+                if self.cont_cmd == 'podman' and count == 2:
+                    chk_cmd.append('--sync')
+                (cmd_stdout, cmd_stderr, returncode) = self.execute(chk_cmd,
+                                                                    self.log)
+
+                if returncode != 0:
+                    self.log.warning('Attempt %i Error when running '
+                                     '%s:' % (count, chk_cmd))
+                    self.log.warning(cmd_stderr)
+                else:
+                    if not cmd_stdout:
+                        self.log.warning('Attempt %i Container %s '
+                                         'is not running' % (count, container))
+
+                count += 1
+                time.sleep(0.2)
+            # return True if ps ran successfuly and returned a container name.
+            return (cmd_stdout and returncode == 0)
