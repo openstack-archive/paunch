@@ -199,7 +199,6 @@ class DockerRunner(object):
                 return names[0]
 
         self.log.warning('Did not find container with "%s"' % cmd)
-        return container
 
     def delete_missing_configs(self, config_ids):
         if not config_ids:

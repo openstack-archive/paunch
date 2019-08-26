@@ -55,11 +55,13 @@ class ComposeV1Builder(object):
                         'Skipping existing container: %s' % container)
                     continue
 
+                c_name = self.runner.discover_container_name(
+                    container, self.config_id) or container
                 cmd = [
                     self.runner.docker_cmd,
                     'run',
                     '--name',
-                    self.runner.unique_container_name(container)
+                    c_name
                 ]
                 self.label_arguments(cmd, container)
                 self.docker_run_args(cmd, container)
