@@ -40,18 +40,19 @@ class BaseBuilder(object):
         stdout = []
         stderr = []
         pull_returncode = self.pull_missing_images(stdout, stderr)
-
         if pull_returncode != 0:
             return stdout, stderr, pull_returncode
 
         self.delete_missing_and_updated()
+
         deploy_status_code = 0
         key_fltr = lambda k: self.config[k].get('start_order', 0)
+
         container_names = self.runner.container_names(self.config_id)
         desired_names = set([cn[-1] for cn in container_names])
 
         for container in sorted(self.config, key=key_fltr):
-            self.log.debug("Apply for container {}.".format(container))
+            self.log.debug("Running container: %s" % container)
             cconfig = self.config[container]
             action = cconfig.get('action', 'run')
             restart = cconfig.get('restart', 'none')
@@ -61,7 +62,6 @@ class BaseBuilder(object):
                                and self.runner.cont_cmd == 'podman'
                                and action == 'run')
             start_cmd = 'create' if systemd_managed else 'run'
-            cmd = []
 
             # When upgrading from Docker to Podman, we want to stop the
             # container that runs under Docker first before starting it with
@@ -70,32 +70,11 @@ class BaseBuilder(object):
             if self.runner.cont_cmd == 'podman' and self.which('docker'):
                 self.runner.stop_container(container, 'docker', quiet=True)
 
-            self.log.debug("Apply action {} for container {}.".format(
-                action, container))
-
             if action == 'run':
-
                 if container in desired_names:
-                    discover_container = self.runner.discover_container_name(
-                        container, self.config_id)
-                    inspect_container = self.runner.inspect(discover_container)
-
-                    try:
-                        self.log.debug("Container running state for %s: %s." %
-                                       (container,
-                                        inspect_container["State"]["Running"]))
-                    except Exception:
-                        self.log.warn("Unable to find the container state" +
-                                      " for %s." % container)
-
-                    if inspect_container["State"]["Running"]:
-                        self.log.debug("Container %s is already running." %
-                                       container)
-                        continue
-                    else:
-                        self.log.debug("Deleting stopped container %s." %
-                                       container)
-                        self.runner.remove_container(container)
+                    self.log.debug('Skipping existing container: %s' %
+                                   container)
+                    continue
 
                 cmd = [
                     self.runner.cont_cmd,
@@ -103,8 +82,8 @@ class BaseBuilder(object):
                     '--name',
                     container_name
                 ]
+
                 self.label_arguments(cmd, container)
-                self.log.debug("Start container {}.".format(container))
                 validations_passed = self.container_run_args(cmd,
                                                              container,
                                                              container_name)
@@ -119,11 +98,11 @@ class BaseBuilder(object):
 
             (cmd_stdout, cmd_stderr, returncode) = self.runner.execute(
                 cmd, self.log)
-
             if cmd_stdout:
                 stdout.append(cmd_stdout)
             if cmd_stderr:
                 stderr.append(cmd_stderr)
+
             if returncode not in exit_codes:
                 self.log.error("Error running %s. [%s]\n" % (cmd, returncode))
                 self.log.error("stdout: %s" % cmd_stdout)
