@@ -13,6 +13,7 @@
 
 import distutils.spawn
 import json
+import os
 import re
 import shutil
 import tenacity
@@ -67,7 +68,8 @@ class BaseBuilder(object):
             # container that runs under Docker first before starting it with
             # Podman. The container will be removed later in THT during
             # upgrade_tasks.
-            if self.runner.cont_cmd == 'podman' and self.which('docker'):
+            if self.runner.cont_cmd == 'podman' and \
+                    os.path.exists('/var/run/docker.sock'):
                 self.runner.stop_container(container, 'docker', quiet=True)
 
             if action == 'run':
