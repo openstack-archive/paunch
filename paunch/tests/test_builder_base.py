@@ -217,11 +217,11 @@ three-12345678 three''', '', 0),
             ('', '', 0),
             # rm six
             ('', '', 0),
-            # inspect config data for two, we made it changed
+            # inspect two
             ('{"start_order": 1, "image": "centos:6"}', '', 0),
-            # rm two
+            # rm two, changed config data
             ('', '', 0),
-            # inspect config data for three
+            # inspect three
             ('{"start_order": 2, "image": "centos:7"}', '', 0),
             # ps for after delete_missing_and_updated renames
             ('', '', 0),
@@ -229,10 +229,8 @@ three-12345678 three''', '', 0),
             ('three-12345678 three', '', 0),
             ('Created one-12345678', '', 0),
             ('Created two-12345678', '', 0),
-            # inspect state for three
-            ('[{"State": {"Running": true}}]', '', 0),
             ('Created four-12345678', '', 0),
-            ('a\nb\nc', '', 0),
+            ('a\nb\nc', '', 0)
         ]
         r.discover_container_name = lambda n, c: '%s-12345678' % n
         r.unique_container_name = lambda n: '%s-12345678' % n
@@ -248,6 +246,7 @@ three-12345678 three''', '', 0),
             'a\nb\nc'
         ], stdout)
         self.assertEqual([], stderr)
+
         exe.assert_has_calls([
             # inspect image centos:7
             mock.call(
@@ -307,9 +306,6 @@ three-12345678 three''', '', 0),
                  '--label', 'config_data=%s' % json.dumps(config['two']),
                  '--detach=true', 'centos:7'], mock.ANY
             ),
-            # check container three status via inspect
-            mock.call(['docker', 'inspect', '--type', 'container',
-                       'three-12345678'], mock.ANY, False),
             # don't run three, its already running
             # run four
             mock.call(
@@ -537,52 +533,3 @@ three-12345678 three''', '', 0),
             ['ls', '-l', '"/foo', 'bar"'],
             b.command_argument('ls -l "/foo bar"')
         )
-
-    @mock.patch('paunch.runner.DockerRunner.execute')
-    @mock.patch('paunch.runner.DockerRunner.remove_container')
-    @mock.patch('paunch.builder.base.BaseBuilder.pull_missing_images')
-    @mock.patch('paunch.builder.base.BaseBuilder.delete_missing_and_updated')
-    @mock.patch('paunch.runner.DockerRunner.container_names')
-    @mock.patch('paunch.runner.DockerRunner.unique_container_name')
-    @mock.patch('paunch.runner.DockerRunner.discover_container_name')
-    @mock.patch('paunch.runner.DockerRunner.inspect')
-    def test_recreate_stopped_container(self, inspect, discover_container_name,
-                                        unique_container_name, container_names,
-                                        delete_missing_and_updated,
-                                        pull_missing_images, remove_container,
-                                        execute):
-        orig_call = tenacity.wait.wait_random_exponential.__call__
-        orig_argspec = inspect.getargspec(orig_call)
-        config = {
-            # not running yet
-            'one': {
-                'start_order': 0,
-                'image': 'centos:7'
-            }
-        }
-        r = runner.DockerRunner(managed_by='tester', cont_cmd='docker')
-
-        with mock.patch('tenacity.wait.wait_random_exponential.__call__') as f:
-            f.return_value = 0
-
-            with mock.patch('inspect.getargspec') as mock_args:
-                mock_args.return_value = orig_argspec
-                builder = compose1.ComposeV1Builder('foo', config, r)
-
-        pull_missing_images.return_value = 0
-        # No value is returned
-        delete_missing_and_updated.return_value = None
-        container_names.return_value = [['one', 'one']]
-        unique_container_name.return_value = 'one'
-        # This can be a no-op since inspect_container() uses this return value
-        # and that will also be overridden.
-        discover_container_name.return_value = None
-        inspect.return_value = {"State": {"Running": False}}
-        remove_container.return_value = ('stdout', 'stderr', 0)
-        execute.return_value = ('stdout', 'stderr', 0)
-        # Run the main apply() method for this test.
-        stdout, stderr, deploy_status_code = builder.apply()
-        pull_missing_images.assert_called_once()
-        container_names.assert_called_once()
-        unique_container_name.assert_called_once()
-        delete_missing_and_updated.assert_called()
