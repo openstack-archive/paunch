@@ -16,6 +16,8 @@ import logging
 import tenacity
 import yaml
 
+from paunch.utils import common
+
 LOG = logging.getLogger(__name__)
 
 
@@ -188,6 +190,15 @@ class ComposeV1Builder(object):
             cmd.append('--log-opt=tag=%s' % cconfig['log_tag'])
         if 'security_opt' in cconfig:
             cmd.append('--security-opt=%s' % cconfig['security_opt'])
+        if 'cpuset_cpus' in cconfig:
+            # 'all' is a special value to directly configure all CPUs
+            # that are available.
+            if cconfig['cpuset_cpus'] == 'all':
+                cmd.append('--cpuset-cpus=%s' % common.get_all_cpus())
+            else:
+                cmd.append('--cpuset-cpus=%s' % cconfig['cpuset_cpus'])
+        else:
+            cmd.append('--cpuset-cpus=%s' % common.get_cpus_allowed_list())
 
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))
