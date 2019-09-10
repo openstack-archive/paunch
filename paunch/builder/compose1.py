@@ -14,6 +14,7 @@
 import os
 
 from paunch.builder import base
+from paunch.utils import common
 
 
 class ComposeV1Builder(base.BaseBuilder):
@@ -81,6 +82,15 @@ class ComposeV1Builder(base.BaseBuilder):
         self.string_arg(cconfig, cmd, 'mem_swappiness', '--memory-swappiness')
         self.string_arg(cconfig, cmd, 'security_opt', '--security-opt')
         self.string_arg(cconfig, cmd, 'stop_signal', '--stop-signal')
+        if 'cpuset_cpus' in cconfig:
+            # 'all' is a special value to directly configure all CPUs
+            # that are available.
+            if cconfig['cpuset_cpus'] == 'all':
+                cmd.append('--cpuset-cpus=%s' % common.get_all_cpus())
+            else:
+                cmd.append('--cpuset-cpus=%s' % cconfig['cpuset_cpus'])
+        else:
+            cmd.append('--cpuset-cpus=%s' % common.get_cpus_allowed_list())
 
         self.string_arg(cconfig, cmd,
                         'stop_grace_period', '--stop-timeout',
@@ -101,7 +111,6 @@ class ComposeV1Builder(base.BaseBuilder):
         # stop_signal
         # volume_driver
         # cpu_quota
-        # cpuset
         # domainname
         # hostname
         # mac_address
