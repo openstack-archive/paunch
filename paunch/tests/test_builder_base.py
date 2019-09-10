@@ -26,7 +26,8 @@ from paunch.tests import base
 
 class TestBaseBuilder(base.TestCase):
 
-    def test_apply(self):
+    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
+    def test_apply(self, mock_cpu):
         orig_call = tenacity.wait.wait_random_exponential.__call__
         orig_argspec = inspect.getargspec(orig_call)
         config = {
@@ -140,7 +141,8 @@ class TestBaseBuilder(base.TestCase):
                  '--label', 'container_name=one',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['one']),
-                 '--detach=true', 'centos:7'], mock.ANY
+                 '--detach=true', '--cpuset-cpus=0,1,2,3',
+                 'centos:7'], mock.ANY
             ),
             # run two
             mock.call(
@@ -149,7 +151,8 @@ class TestBaseBuilder(base.TestCase):
                  '--label', 'container_name=two',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['two']),
-                 '--detach=true', 'centos:7'], mock.ANY
+                 '--detach=true', '--cpuset-cpus=0,1,2,3',
+                 'centos:7'], mock.ANY
             ),
             # run three
             mock.call(
@@ -158,7 +161,8 @@ class TestBaseBuilder(base.TestCase):
                  '--label', 'container_name=three',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['three']),
-                 '--detach=true', 'centos:6'], mock.ANY
+                 '--detach=true', '--cpuset-cpus=0,1,2,3',
+                 'centos:6'], mock.ANY
             ),
             # run four
             mock.call(
@@ -167,7 +171,8 @@ class TestBaseBuilder(base.TestCase):
                  '--label', 'container_name=four',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['four']),
-                 '--detach=true', 'centos:7'], mock.ANY
+                 '--detach=true', '--cpuset-cpus=0,1,2,3',
+                 'centos:7'], mock.ANY
             ),
             # execute within four
             mock.call(
@@ -175,7 +180,8 @@ class TestBaseBuilder(base.TestCase):
             ),
         ])
 
-    def test_apply_idempotency(self):
+    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
+    def test_apply_idempotency(self, mock_cpu):
         config = {
             # not running yet
             'one': {
@@ -296,7 +302,8 @@ three-12345678 three''', '', 0),
                  '--label', 'container_name=one',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['one']),
-                 '--detach=true', 'centos:7'], mock.ANY
+                 '--detach=true', '--cpuset-cpus=0,1,2,3',
+                 'centos:7'], mock.ANY
             ),
             # run two
             mock.call(
@@ -305,7 +312,8 @@ three-12345678 three''', '', 0),
                  '--label', 'container_name=two',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['two']),
-                 '--detach=true', 'centos:7'], mock.ANY
+                 '--detach=true', '--cpuset-cpus=0,1,2,3',
+                 'centos:7'], mock.ANY
             ),
             # don't run three, its already running
             # run four
@@ -315,7 +323,8 @@ three-12345678 three''', '', 0),
                  '--label', 'container_name=four',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['four']),
-                 '--detach=true', 'centos:7'], mock.ANY
+                 '--detach=true', '--cpuset-cpus=0,1,2,3',
+                 'centos:7'], mock.ANY
             ),
             # execute within four
             mock.call(
@@ -452,7 +461,8 @@ three-12345678 three''', '', 0),
             self.assertIn(arg, cmd)
 
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
-    def test_container_run_args_lists(self, runner):
+    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
+    def test_container_run_args_lists(self, mock_cpu, runner):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -484,6 +494,47 @@ three-12345678 three''', '', 0),
              '--group-add=docker', '--group-add=zuul',
              '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
              '--volumes-from=two', '--volumes-from=three',
+             '--cpuset-cpus=0,1,2,3',
+             '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
+             'centos:7', 'ls', '-l', '/foo'],
+            cmd
+        )
+
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_container_run_args_lists_with_cpu(self, runner):
+        config = {
+            'one': {
+                'image': 'centos:7',
+                'detach': False,
+                'command': 'ls -l /foo',
+                'remove': True,
+                'tty': True,
+                'interactive': True,
+                'environment': ['FOO=BAR', 'BAR=BAZ'],
+                'env_file': ['/tmp/foo.env', '/tmp/bar.env'],
+                'ulimit': ['nofile=1024', 'nproc=1024'],
+                'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
+                'volumes_from': ['two', 'three'],
+                'group_add': ['docker', 'zuul'],
+                'cap_add': ['SYS_ADMIN', 'SETUID'],
+                'cap_drop': ['NET_RAW'],
+                'cpuset_cpus': '0-2',
+            }
+        }
+        builder = compose1.ComposeV1Builder('foo', config, runner)
+
+        cmd = ['docker', 'run', '--name', 'one']
+        builder.container_run_args(cmd, 'one')
+        self.assertEqual(
+            ['docker', 'run', '--name', 'one',
+             '--env-file=/tmp/foo.env', '--env-file=/tmp/bar.env',
+             '--env=FOO=BAR', '--env=BAR=BAZ',
+             '--rm', '--interactive', '--tty',
+             '--ulimit=nofile=1024', '--ulimit=nproc=1024',
+             '--group-add=docker', '--group-add=zuul',
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
+             '--volumes-from=two', '--volumes-from=three',
+             '--cpuset-cpus=0-2',
              '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
              'centos:7', 'ls', '-l', '/foo'],
             cmd

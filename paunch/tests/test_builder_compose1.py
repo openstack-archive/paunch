@@ -20,7 +20,8 @@ from paunch.tests import test_builder_base as tbb
 
 class TestComposeV1Builder(tbb.TestBaseBuilder):
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
-    def test_cont_run_args(self, runner):
+    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
+    def test_cont_run_args(self, mock_cpu, runner):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -76,13 +77,15 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
              '--hostname=foohostname',
              '--add-host=foohost:127.0.0.1',
              '--add-host=barhost:127.0.0.2',
+             '--cpuset-cpus=0,1,2,3',
              '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
              'centos:7'],
             cmd
         )
 
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
-    def test_cont_run_args_validation_true(self, runner):
+    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
+    def test_cont_run_args_validation_true(self, mock_cpu, runner):
         config = {
             'one': {
                 'image': 'foo',
@@ -96,12 +99,15 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
         self.assertTrue(builder.container_run_args(cmd, 'one'))
         self.assertEqual(
             ['docker', '--detach=true',
-             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
+             '--cpuset-cpus=0,1,2,3',
+             'foo'],
             cmd
         )
 
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
-    def test_cont_run_args_validation_false(self, runner):
+    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
+    def test_cont_run_args_validation_false(self, mock_cpu, runner):
         config = {
             'one': {
                 'image': 'foo',
@@ -115,6 +121,7 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
         self.assertFalse(builder.container_run_args(cmd, 'one'))
         self.assertEqual(
             ['docker', '--detach=true',
-             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
+             '--cpuset-cpus=0,1,2,3', 'foo'],
             cmd
         )
