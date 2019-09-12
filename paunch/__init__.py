@@ -126,8 +126,8 @@ def debug(config_id, container_name, action, config, managed_by, labels=None,
             '--name',
             r.unique_container_name(container_name)
         ]
-        if builder.docker_run_args(cmd, container_name):
-            return r.execute_interactive(cmd)
+        builder.docker_run_args(cmd, container_name)
+        return r.execute_interactive(cmd)
     elif action == 'dump-yaml':
         print(yaml.safe_dump(config, default_flow_style=False))
     elif action == 'dump-json':
