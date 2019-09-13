@@ -12,6 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import mock
+
 from paunch.builder import podman
 from paunch.tests import test_builder_base as base
 
@@ -65,5 +67,43 @@ class TestPodmanBuilder(base.TestBaseBuilder):
              '--add-host=barhost:127.0.0.2',
              '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
              'centos:7'],
+            cmd
+        )
+
+    @mock.patch('paunch.runner.PodmanRunner', autospec=True)
+    def test_cont_run_args_validation_true(self, runner):
+        config = {
+            'one': {
+                'image': 'foo',
+                'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
+            }
+        }
+        runner.validate_volume_source.return_value = True
+        builder = podman.PodmanBuilder('foo', config, runner)
+
+        cmd = ['podman']
+        self.assertTrue(builder.container_run_args(cmd, 'one'))
+        self.assertEqual(
+            ['podman', '--conmon-pidfile=/var/run/one.pid', '--detach=true',
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
+            cmd
+        )
+
+    @mock.patch('paunch.runner.PodmanRunner', autospec=True)
+    def test_cont_run_args_validation_false(self, runner):
+        config = {
+            'one': {
+                'image': 'foo',
+                'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
+            }
+        }
+        runner.validate_volume_source.return_value = False
+        builder = podman.PodmanBuilder('foo', config, runner)
+
+        cmd = ['podman']
+        self.assertFalse(builder.container_run_args(cmd, 'one'))
+        self.assertEqual(
+            ['podman', '--conmon-pidfile=/var/run/one.pid', '--detach=true',
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
             cmd
         )

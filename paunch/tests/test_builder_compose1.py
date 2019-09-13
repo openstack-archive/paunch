@@ -19,7 +19,8 @@ from paunch.tests import test_builder_base as tbb
 
 
 class TestComposeV1Builder(tbb.TestBaseBuilder):
-    def test_cont_run_args(self):
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_cont_run_args(self, runner):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -53,7 +54,8 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
 
             }
         }
-        builder = compose1.ComposeV1Builder('foo', config, None)
+        runner.validate_volume_source.return_value = True
+        builder = compose1.ComposeV1Builder('foo', config, runner)
 
         cmd = ['docker', 'run', '--name', 'one']
         builder.container_run_args(cmd, 'one')
@@ -79,16 +81,16 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
             cmd
         )
 
-    @mock.patch('os.path.exists')
-    def test_cont_run_args_validation_true(self, path_exists):
-        path_exists.return_value = True
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_cont_run_args_validation_true(self, runner):
         config = {
             'one': {
                 'image': 'foo',
                 'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
             }
         }
-        builder = compose1.ComposeV1Builder('foo', config, None)
+        runner.validate_volume_source.return_value = True
+        builder = compose1.ComposeV1Builder('foo', config, runner)
 
         cmd = ['docker']
         self.assertTrue(builder.container_run_args(cmd, 'one'))
@@ -98,16 +100,16 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
             cmd
         )
 
-    @mock.patch('os.path.exists')
-    def test_cont_run_args_validation_false(self, path_exists):
-        path_exists.return_value = False
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_cont_run_args_validation_false(self, runner):
         config = {
             'one': {
                 'image': 'foo',
                 'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
             }
         }
-        builder = compose1.ComposeV1Builder('foo', config, None)
+        runner.validate_volume_source.return_value = False
+        builder = compose1.ComposeV1Builder('foo', config, runner)
 
         cmd = ['docker']
         self.assertFalse(builder.container_run_args(cmd, 'one'))
