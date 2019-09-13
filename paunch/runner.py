@@ -14,6 +14,7 @@
 import collections
 import jmespath
 import json
+import os
 import random
 import string
 import subprocess
@@ -282,6 +283,35 @@ class BaseRunner(object):
                 self.log.info('Renaming "%s" to "%s"' % (current, desired))
                 self.rename_container(current, desired)
                 current_containers.append(desired)
+
+    def validate_volume_source(self, volume):
+        """Validate that the provided volume
+
+        This checks that the provided volume either exists on the filesystem
+        or is a container volume.
+
+        :param: volume: string containing either a filesystme path or container
+                        volume name
+        """
+        if os.path.exists(volume):
+            return True
+
+        if os.path.sep in volume:
+            # if we get here and have a path seperator, let's skip the
+            # container lookup because container volumes won't have / in them.
+            self.log.debug('Path seperator found in volume (%s), but did not '
+                           'exist on the file system' % volume)
+            return False
+
+        self.log.debug('Running volume lookup for "%s"' % volume)
+        filter_opt = '--filter=name={}'.format(volume)
+        cmd = [self.cont_cmd, 'volume', 'ls', '-q', filter_opt]
+        cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+        if returncode != 0:
+            self.log.error('Error during volume verification')
+            self.log.error(cmd_stderr)
+            return False
+        return (volume in set(cmd_stdout.split()))
 
 
 class DockerRunner(BaseRunner):

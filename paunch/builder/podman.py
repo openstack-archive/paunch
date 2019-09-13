@@ -105,4 +105,4 @@ class PodmanBuilder(base.BaseBuilder):
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))
 
-        return True
+        return self.validate_volumes(cconfig.get('volumes', []))

@@ -18,6 +18,7 @@ import json
 import mock
 import tenacity
 
+from paunch.builder import base as basebuilder
 from paunch.builder import compose1
 from paunch import runner
 from paunch.tests import base
@@ -418,7 +419,8 @@ three-12345678 three''', '', 0),
              '--label', 'config_data=null'],
             cmd)
 
-    def test_durations(self):
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_durations(self, runner):
         config = {
             'a': {'stop_grace_period': 123},
             'b': {'stop_grace_period': 123.5},
@@ -430,7 +432,7 @@ three-12345678 three''', '', 0),
             'h': {'stop_grace_period': '5h34m56s'},
             'i': {'stop_grace_period': '1h1m1s1ms1us'},
         }
-        builder = compose1.ComposeV1Builder('foo', config, None)
+        builder = compose1.ComposeV1Builder('foo', config, runner)
 
         result = {
             'a': '--stop-timeout=123',
@@ -449,9 +451,8 @@ three-12345678 three''', '', 0),
             builder.container_run_args(cmd, container)
             self.assertIn(arg, cmd)
 
-    @mock.patch('os.path.exists')
-    def test_container_run_args_lists(self, path_exists):
-        path_exists.return_value = True
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_container_run_args_lists(self, runner):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -470,7 +471,7 @@ three-12345678 three''', '', 0),
                 'cap_drop': ['NET_RAW']
             }
         }
-        builder = compose1.ComposeV1Builder('foo', config, None)
+        builder = compose1.ComposeV1Builder('foo', config, runner)
 
         cmd = ['docker', 'run', '--name', 'one']
         builder.container_run_args(cmd, 'one')
@@ -533,3 +534,24 @@ three-12345678 three''', '', 0),
             ['ls', '-l', '"/foo', 'bar"'],
             b.command_argument('ls -l "/foo bar"')
         )
+
+
+class TestVolumeChecks(base.TestCase):
+    @mock.patch('paunch.runner.PodmanRunner', autospec=True)
+    def test_validate_volumes(self, runner):
+        runner.validate_volume_source.return_value = True
+        builder = basebuilder.BaseBuilder('test', {}, runner, {})
+        volumes = ['', '/var:/var', 'test:/bar']
+        self.assertTrue(builder.validate_volumes(volumes))
+
+    def test_validate_volumes_empty(self):
+        builder = basebuilder.BaseBuilder('test', {}, runner, {})
+        volumes = []
+        self.assertTrue(builder.validate_volumes(volumes))
+
+    @mock.patch('paunch.runner.PodmanRunner', autospec=True)
+    def test_validate_volumes_fail(self, runner):
+        runner.validate_volume_source.return_value = False
+        builder = basebuilder.BaseBuilder('test', {}, runner, {})
+        volumes = ['/var:/var']
+        self.assertFalse(builder.validate_volumes(volumes))
