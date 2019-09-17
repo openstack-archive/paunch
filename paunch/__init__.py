@@ -101,7 +101,6 @@ def cleanup(config_ids, managed_by, cont_cmd='podman', default_runtime=None,
 
     if cont_cmd == 'podman':
         r = runner.PodmanRunner(managed_by, cont_cmd=cont_cmd, log=log)
-        log.warning("paunch cleanup is partially supported with podman")
     else:
         r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
 
@@ -247,7 +246,6 @@ def delete(config_ids, managed_by, cont_cmd='podman', default_runtime=None,
 
     if cont_cmd == 'podman':
         r = runner.PodmanRunner(managed_by, cont_cmd=cont_cmd, log=log)
-        log.warning("paunch cleanup is partially supported with podman")
     else:
         r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
 
