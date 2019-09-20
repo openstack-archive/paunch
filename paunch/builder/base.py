@@ -352,6 +352,28 @@ class BaseBuilder(object):
             n += float(m.group(10)) / 1000000.0
         return n
 
+    def validate_volumes(self, volumes):
+        """Validate volume sources
+
+        Validates that the source volume either exists on the filesystem
+        or is a valid container volume.  Since podman will error if the
+        source volume filesystem path doesn't exist, we want to catch the
+        error before podman.
+
+        :param: volumes: list of volume mounts in the format of "src:path"
+        """
+        valid = True
+        for volume in volumes:
+            if not volume:
+                # ignore when volume is ''
+                continue
+            src_path = volume.split(':', 1)[0]
+            check = self.runner.validate_volume_source(src_path)
+            if not check:
+                self.log.error("%s is not a valid volume source" % src_path)
+                valid = False
+        return valid
+
 
 class PullException(Exception):
 
