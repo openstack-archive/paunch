@@ -142,7 +142,7 @@ class TestBaseRunner(base.TestCase):
         self.mock_execute(popen, '', '', 0)
 
         self.assertEqual(
-            'one',
+            None,
             self.runner.discover_container_name('one', 'foo')
         )
 
@@ -151,7 +151,7 @@ class TestBaseRunner(base.TestCase):
         self.mock_execute(popen, '', 'ouch', 1)
 
         self.assertEqual(
-            'one',
+            None,
             self.runner.discover_container_name('one', 'foo')
         )
 

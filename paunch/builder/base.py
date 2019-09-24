@@ -78,17 +78,20 @@ class BaseBuilder(object):
                                    container)
                     continue
 
+                c_name = self.runner.discover_container_name(
+                    container, self.config_id) or container
                 cmd = [
                     self.runner.cont_cmd,
                     start_cmd,
                     '--name',
-                    container_name
+                    c_name
                 ]
 
                 self.label_arguments(cmd, container)
-                validations_passed = self.container_run_args(cmd,
-                                                             container,
-                                                             container_name)
+                self.log.debug("Start container {} as {}.".format(container,
+                                                                  c_name))
+                validations_passed = self.container_run_args(
+                    cmd, container, c_name)
             elif action == 'exec':
                 # for exec, the first argument is the fixed named container
                 # used when running the command into the running container.
@@ -102,7 +105,7 @@ class BaseBuilder(object):
                 # Before running the exec, we want to make sure the container
                 # is running.
                 # https://bugs.launchpad.net/bugs/1839559
-                if not self.runner.container_running(c_name):
+                if not c_name or not self.runner.container_running(c_name):
                     msg = ('Failing to apply action exec for '
                            'container: %s' % container)
                     raise RuntimeError(msg)
