@@ -12,16 +12,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import mock
-
 from paunch.builder import podman
 from paunch.tests import test_builder_base as base
 
 
 class TestPodmanBuilder(base.TestBaseBuilder):
-
-    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_cont_run_args(self, mock_cpu):
+    def test_cont_run_args(self):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -67,7 +63,6 @@ class TestPodmanBuilder(base.TestBaseBuilder):
              '--hostname=foohostname',
              '--add-host=foohost:127.0.0.1',
              '--add-host=barhost:127.0.0.2',
-             '--cpuset-cpus=0,1,2,3',
              '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
              'centos:7'],
             cmd

@@ -15,7 +15,6 @@
 
 import logging
 import os
-import psutil
 import sys
 
 from paunch import constants
@@ -65,19 +64,3 @@ def configure_logging_from_args(name, app_args):
     log = utils.common.configure_logging(
         __name__, log_level, log_file)
     return (log, log_file, log_level)
-
-
-def get_cpus_allowed_list(**args):
-    """Returns the process's Cpus_allowed on which CPUs may be scheduled.
-
-    :return: Value for Cpus_allowed, e.g. '0-3'
-    """
-    return ','.join([str(c) for c in psutil.Process().cpu_affinity()])
-
-
-def get_all_cpus(**args):
-    """Returns a single list of all CPUs.
-
-    :return: Value computed by psutil, e.g. '0-3'
-    """
-    return "0-" + str(psutil.cpu_count() - 1)

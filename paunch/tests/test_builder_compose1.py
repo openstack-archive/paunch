@@ -19,9 +19,7 @@ from paunch.tests import test_builder_base as tbb
 
 
 class TestComposeV1Builder(tbb.TestBaseBuilder):
-
-    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_cont_run_args(self, mock_cpu):
+    def test_cont_run_args(self):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -67,15 +65,13 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
              '--memory-swap=1G',
              '--memory-swappiness=60',
              '--security-opt=label:disable',
-             '--cpuset-cpus=0,1,2,3',
              '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
              'centos:7'],
             cmd
         )
 
     @mock.patch('os.path.exists')
-    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_cont_run_args_validation_true(self, mock_cpu, path_exists):
+    def test_cont_run_args_validation_true(self, path_exists):
         path_exists.return_value = True
         config = {
             'one': {
@@ -89,15 +85,12 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
         self.assertTrue(builder.container_run_args(cmd, 'one'))
         self.assertEqual(
             ['docker', '--detach=true',
-             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
-             '--cpuset-cpus=0,1,2,3',
-             'foo'],
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
             cmd
         )
 
     @mock.patch('os.path.exists')
-    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_cont_run_args_validation_false(self, mock_cpu, path_exists):
+    def test_cont_run_args_validation_false(self, path_exists):
         path_exists.return_value = False
         config = {
             'one': {
@@ -111,7 +104,6 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
         self.assertFalse(builder.container_run_args(cmd, 'one'))
         self.assertEqual(
             ['docker', '--detach=true',
-             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
-             '--cpuset-cpus=0,1,2,3', 'foo'],
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
             cmd
         )
