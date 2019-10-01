@@ -95,6 +95,8 @@ class BaseBuilder(object):
             elif action == 'exec':
                 # for exec, the first argument is the fixed named container
                 # used when running the command into the running container.
+                # use the discovered container name to manipulate with the
+                # real (delagate) container representing the fixed named one
                 command = self.command_argument(cconfig.get('command'))
                 if command:
                     c_name = self.runner.discover_container_name(
@@ -110,7 +112,9 @@ class BaseBuilder(object):
                            'container: %s' % container)
                     raise RuntimeError(msg)
                 cmd = [self.runner.cont_cmd, 'exec']
-                validations_passed = self.cont_exec_args(cmd, container)
+                validations_passed = self.cont_exec_args(cmd,
+                                                         container,
+                                                         c_name)
 
             if not validations_passed:
                 self.log.debug('Validations failed. Skipping container: %s' %
@@ -227,14 +231,17 @@ class BaseBuilder(object):
             if v:
                 cmd.append('%s=%s' % (arg, v))
 
-    def cont_exec_args(self, cmd, container):
+    def cont_exec_args(self, cmd, container, delegate=None):
         """Prepare the exec command args, from the container configuration.
 
         :param cmd: The list of command options to be modified
         :param container: A dict with container configurations
+        :param delegate: A predictable/unique name of the actual container
         :returns: True if configuration is valid, otherwise False
         """
-
+        if delegate and container != delegate:
+            self.log.debug("Container {} has a delegate "
+                           "{}".format(container, delegate))
         cconfig = self.config[container]
         if 'privileged' in cconfig:
             cmd.append('--privileged=%s' % str(cconfig['privileged']).lower())
@@ -244,8 +251,11 @@ class BaseBuilder(object):
         # for exec, the first argument is the container name,
         # make sure the correct one is used
         if command:
-            command[0] = self.runner.discover_container_name(
-                command[0], self.config_id)
+            if not delegate:
+                command[0] = self.runner.discover_container_name(
+                    command[0], self.config_id)
+            else:
+                command[0] = delegate
         cmd.extend(command)
 
         return True
