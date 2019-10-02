@@ -73,8 +73,10 @@ class TestPodmanBuilder(base.TestBaseBuilder):
             cmd
         )
 
+    @mock.patch("psutil.Process.cpu_affinity",
+                return_value=[0, 1, 2, 3, 4, 5, 6, 7])
     @mock.patch('paunch.runner.PodmanRunner', autospec=True)
-    def test_cont_run_args_validation_true(self, runner):
+    def test_cont_run_args_validation_true(self, runner, mock_cpu):
         config = {
             'one': {
                 'image': 'foo',
@@ -93,8 +95,10 @@ class TestPodmanBuilder(base.TestBaseBuilder):
             cmd
         )
 
+    @mock.patch("psutil.Process.cpu_affinity",
+                return_value=[0, 1, 2, 3, 4, 5, 6, 7])
     @mock.patch('paunch.runner.PodmanRunner', autospec=True)
-    def test_cont_run_args_validation_false(self, runner):
+    def test_cont_run_args_validation_false(self, runner, mock_cpu):
         config = {
             'one': {
                 'image': 'foo',
