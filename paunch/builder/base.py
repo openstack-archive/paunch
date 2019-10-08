@@ -238,6 +238,21 @@ class BaseBuilder(object):
             if v:
                 cmd.append('%s=%s' % (arg, v))
 
+    def list_or_dict_arg(self, cconfig, cmd, key, arg):
+        if key not in cconfig:
+            return
+        value = cconfig[key]
+        if isinstance(value, dict):
+            for k, v in sorted(value.items()):
+                if v:
+                    cmd.append('%s=%s=%s' % (arg, k, v))
+                elif k:
+                    cmd.append('%s=%s' % (arg, k))
+        else:
+            for v in value:
+                if v:
+                    cmd.append('%s=%s' % (arg, v))
+
     def cont_exec_args(self, cmd, container):
         """Prepare the exec command args, from the container configuration.
 

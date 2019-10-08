@@ -59,10 +59,7 @@ class PodmanBuilder(base.BaseBuilder):
                 raise ValueError('cont_log_path passed but not absolute.')
 
         self.list_or_string_arg(cconfig, cmd, 'env_file', '--env-file')
-        # TODO(sbaker): support the dict layout for this property
-        for v in cconfig.get('environment', []):
-            if v:
-                cmd.append('--env=%s' % v)
+        self.list_or_dict_arg(cconfig, cmd, 'environment', '--env')
         self.boolean_arg(cconfig, cmd, 'remove', '--rm')
         self.boolean_arg(cconfig, cmd, 'interactive', '--interactive')
         self.boolean_arg(cconfig, cmd, 'tty', '--tty')
