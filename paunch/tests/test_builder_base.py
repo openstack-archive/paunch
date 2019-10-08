@@ -503,7 +503,7 @@ three-12345678 three''', '', 0),
         )
 
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
-    def test_container_run_args_lists_with_cpu(self, runner):
+    def test_container_run_args_lists_with_cpu_and_dict_env(self, runner):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -512,7 +512,7 @@ three-12345678 three''', '', 0),
                 'remove': True,
                 'tty': True,
                 'interactive': True,
-                'environment': ['FOO=BAR', 'BAR=BAZ'],
+                'environment': {'BAR': 'BAZ', 'FOO': 'BAR', 'SINGLE': ''},
                 'env_file': ['/tmp/foo.env', '/tmp/bar.env'],
                 'ulimit': ['nofile=1024', 'nproc=1024'],
                 'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
@@ -530,7 +530,7 @@ three-12345678 three''', '', 0),
         self.assertEqual(
             ['docker', 'run', '--name', 'one',
              '--env-file=/tmp/foo.env', '--env-file=/tmp/bar.env',
-             '--env=FOO=BAR', '--env=BAR=BAZ',
+             '--env=BAR=BAZ', '--env=FOO=BAR', '--env=SINGLE',
              '--rm', '--interactive', '--tty',
              '--ulimit=nofile=1024', '--ulimit=nproc=1024',
              '--group-add=docker', '--group-add=zuul',
