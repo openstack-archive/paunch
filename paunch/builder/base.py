@@ -241,7 +241,7 @@ class BaseBuilder(object):
                     cmd.append('%s=%s=%s' % (arg, k, v))
                 elif k:
                     cmd.append('%s=%s' % (arg, k))
-        else:
+        elif isinstance(value, list):
             for v in value:
                 if v:
                     cmd.append('%s=%s' % (arg, v))
