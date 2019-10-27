@@ -13,10 +13,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import glob
 import logging
 import os
 import psutil
+import re
 import sys
+import yaml
 
 from paunch import constants
 from paunch import utils
@@ -81,3 +84,70 @@ def get_all_cpus(**args):
     :return: Value computed by psutil, e.g. '0-3'
     """
     return "0-" + str(psutil.cpu_count() - 1)
+
+
+def load_config(config, name=None):
+    container_config = {}
+    if os.path.isdir(config):
+        # When the user gives a config directory and specify a container name,
+        # we return the container config for that specific container.
+        if name:
+            cf = 'hashed-' + name + '.json'
+            with open(os.path.join(config, cf), 'r') as f:
+                container_config[name] = {}
+                container_config[name].update(yaml.safe_load(f))
+        # When the user gives a config directory and without container name,
+        # we return all container configs in that directory.
+        else:
+            config_files = glob.glob(os.path.join(config, 'hashed-*.json'))
+            for cf in config_files:
+                with open(os.path.join(config, cf), 'r') as f:
+                    name = os.path.basename(os.path.splitext(
+                        cf.replace('hashed-', ''))[0])
+                    container_config[name] = {}
+                    container_config[name].update(yaml.safe_load(f))
+    else:
+        # Backward compatibility so our users can still use the old path,
+        # paunch will recognize it and find the right container config.
+        old_format = '/var/lib/tripleo-config/hashed-container-startup-config'
+        if config.startswith(old_format):
+            step = re.search('/var/lib/tripleo-config/'
+                             'hashed-container-startup-config-step'
+                             '_(.+).json', config).group(1)
+            # If a name is specified, we return the container config for that
+            # specific container.
+            if name:
+                new_path = os.path.join(
+                    '/var/lib/tripleo-config/container_startup_config',
+                    'step_' + step, 'hashed-' + name + '.json')
+                with open(new_path, 'r') as f:
+                    c_config = yaml.safe_load(f)
+                    container_config[name] = {}
+                    container_config[name].update(c_config[name])
+            # When no name is specified, we return all container configs in
+            # the file.
+            else:
+                new_path = os.path.join(
+                    '/var/lib/tripleo-config/container_startup_config',
+                    'step_' + step)
+                config_files = glob.glob(os.path.join(new_path,
+                                                      'hashed-*.json'))
+                for cf in config_files:
+                    with open(os.path.join(new_path, cf), 'r') as f:
+                        name = os.path.basename(os.path.splitext(
+                            cf.replace('hashed-', ''))[0])
+                        c_config = yaml.safe_load(f)
+                        container_config[name] = {}
+                        container_config[name].update(c_config[name])
+        # When the user gives a file path, that isn't the old format,
+        # we consider it's the new format so the file name is the container
+        # name.
+        else:
+            if not name:
+                # No name was given, we'll guess it with file name
+                name = os.path.basename(os.path.splitext(
+                    config.replace('hashed-', ''))[0])
+            with open(os.path.join(config), 'r') as f:
+                container_config[name] = {}
+                container_config[name].update(yaml.safe_load(f))
+    return container_config
