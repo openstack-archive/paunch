@@ -16,7 +16,6 @@ import collections
 from cliff import command
 from cliff import lister
 import json
-import yaml
 
 import paunch
 
@@ -33,7 +32,8 @@ class Apply(command.Command):
             '--file',
             metavar='<file>',
             required=True,
-            help=('YAML or JSON file containing configuration data'),
+            help=('YAML or JSON file or directory containing configuration '
+                  'data'),
         )
         parser.add_argument(
             '--label',
@@ -89,8 +89,8 @@ class Apply(command.Command):
             k, v = l.split(('='), 1)
             labels[k] = v
 
-        with open(parsed_args.file, 'r') as f:
-            config = yaml.safe_load(f)
+        config_path = parsed_args.file
+        config = utils.common.load_config(config_path)
 
         stdout, stderr, rc = paunch.apply(
             parsed_args.config_id,
@@ -198,7 +198,8 @@ class Debug(command.Command):
             '--file',
             metavar='<file>',
             required=True,
-            help=('YAML or JSON file containing configuration data')
+            help=('YAML or JSON file or directory containing configuration '
+                  'data'),
         )
         parser.add_argument(
             '--label',
@@ -286,10 +287,10 @@ class Debug(command.Command):
             k, v = l.split(('='), 1)
             labels[k] = v
 
-        with open(parsed_args.file, 'r') as f:
-            config = yaml.safe_load(f)
-
         container_name = parsed_args.container_name
+        config_path = parsed_args.file
+        config = utils.common.load_config(config_path, container_name)
+
         cconfig = {}
         cconfig[container_name] = config[container_name]
 
