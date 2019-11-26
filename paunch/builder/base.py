@@ -36,6 +36,11 @@ class BaseBuilder(object):
         self.cont_log_path = cont_log_path
         self.healthcheck_disabled = healthcheck_disabled
 
+        if os.path.isfile('/var/lib/tripleo-config/.ansible-managed'):
+            msg = ('Containers were previously deployed with '
+                   'tripleo-ansible, paunch CLI can not be used.')
+            raise RuntimeError(msg)
+
     def apply(self):
 
         stdout = []
