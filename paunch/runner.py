@@ -76,9 +76,20 @@ class BaseRunner(object):
             '--format', fmt
         ]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
-        if returncode != 0:
-            return set()
-        return set(cmd_stdout.split())
+        results = cmd_stdout.split()
+        if returncode != 0 or not results or results == ['']:
+            # NOTE(bogdando): also look by the historically used to
+            # be always specified defaults, we must also identify such configs
+            cmd = [
+                self.cont_cmd, 'ps', '-a',
+                '--filter', 'label=managed_by=paunch',
+                '--format', fmt
+            ]
+            cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
+            if returncode != 0:
+                return set()
+            results += cmd_stdout.split()
+        return set(results)
 
     def containers_in_config(self, conf_id):
         cmd = [
@@ -87,10 +98,21 @@ class BaseRunner(object):
             '--filter', 'label=config_id=%s' % conf_id
         ]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
-        if returncode != 0:
-            return []
+        results = cmd_stdout.split()
+        if returncode != 0 or not results or results == ['']:
+            # NOTE(bogdando): also look by the historically used to
+            # be always specified defaults, we must also identify such configs
+            cmd = [
+                self.cont_cmd, 'ps', '-q', '-a',
+                '--filter', 'label=managed_by=paunch',
+                '--filter', 'label=config_id=%s' % conf_id
+            ]
+            cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
+            if returncode != 0:
+                return []
+            results += cmd_stdout.split()
 
-        return [c for c in cmd_stdout.split()]
+        return [c for c in results]
 
     def inspect(self, name, output_format=None, o_type='container',
                 quiet=False):
@@ -232,9 +254,26 @@ class BaseRunner(object):
             '--format', '{{.Names}} %s' % fmt
         ))
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
-        if returncode != 0:
-            return
-        for line in cmd_stdout.split("\n"):
+        results = cmd_stdout.split("\n")
+        if returncode != 0 or not results or results == ['']:
+            # NOTE(bogdando): also look by the historically used to
+            # be always specified defaults, we must also identify such configs
+            cmd = [
+                self.cont_cmd, 'ps', '-a',
+                '--filter', 'label=managed_by=paunch'
+            ]
+            if conf_id:
+                cmd.extend((
+                    '--filter', 'label=config_id=%s' % conf_id
+                ))
+            cmd.extend((
+                '--format', '{{.Names}} %s' % fmt
+            ))
+            cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
+            if returncode != 0:
+                return
+            results += cmd_stdout.split("\n")
+        for line in results:
             if line:
                 yield line.split()
 
