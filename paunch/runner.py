@@ -53,9 +53,20 @@ class DockerRunner(object):
             '--format', '{{.Label "config_id"}}'
         ]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
-        if returncode != 0:
-            return set()
-        return set(cmd_stdout.split())
+        results = cmd_stdout.split()
+        if returncode != 0 or not results or results == ['']:
+            # NOTE(bogdando): also look by the historically used to
+            # be always specified defaults, we must also identify such configs
+            cmd = [
+                self.docker_cmd, 'ps', '-a',
+                '--filter', 'label=managed_by=paunch',
+                '--format', '{{.Label "config_id"}}'
+            ]
+            cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+            if returncode != 0:
+                return set()
+            results += cmd_stdout.split()
+        return set(results)
 
     def containers_in_config(self, conf_id):
         cmd = [
@@ -64,10 +75,21 @@ class DockerRunner(object):
             '--filter', 'label=config_id=%s' % conf_id
         ]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
-        if returncode != 0:
-            return []
+        results = cmd_stdout.split()
+        if returncode != 0 or not results or results == ['']:
+            # NOTE(bogdando): also look by the historically used to
+            # be always specified defaults, we must also identify such configs
+            cmd = [
+                self.docker_cmd, 'ps', '-q', '-a',
+                '--filter', 'label=managed_by=paunch',
+                '--filter', 'label=config_id=%s' % conf_id
+            ]
+            cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+            if returncode != 0:
+                return []
+            results += cmd_stdout.split()
 
-        return [c for c in cmd_stdout.split()]
+        return [c for c in results]
 
     def remove_containers(self, conf_id):
         for container in self.containers_in_config(conf_id):
@@ -94,9 +116,26 @@ class DockerRunner(object):
             '--format', '{{.Names}} {{.Label "container_name"}}'
         ))
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
-        if returncode != 0:
-            return
-        for line in cmd_stdout.split("\n"):
+        results = cmd_stdout.split("\n")
+        if returncode != 0 or not results or results == ['']:
+            # NOTE(bogdando): also look by the historically used to
+            # be always specified defaults, we must also identify such configs
+            cmd = [
+                self.docker_cmd, 'ps', '-a',
+                '--filter', 'label=managed_by=paunch'
+            ]
+            if conf_id:
+                cmd.extend((
+                    '--filter', 'label=config_id=%s' % conf_id
+                ))
+            cmd.extend((
+                '--format', '{{.Names}} {{.Label "container_name"}}'
+            ))
+            cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
+            if returncode != 0:
+                return
+            results += cmd_stdout.split("\n")
+        for line in results:
             if line:
                 yield line.split()
 
