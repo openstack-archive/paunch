@@ -62,8 +62,11 @@ class TestBaseBuilder(base.TestCase):
             ('Pulled centos:7', 'ouch', 1),  # pull centos:6 fails
             ('Pulled centos:7', '', 0),  # pull centos:6 succeeds
             ('', '', 0),  # ps for delete_missing_and_updated container_names
+            ('', '', 0),  # ps2 for delete_missing_and_updated container_names
             ('', '', 0),  # ps for after delete_missing_and_updated renames
+            ('', '', 0),  # ps2 for after delete_missing_and_updated renames
             ('', '', 0),  # ps to only create containers which don't exist
+            ('', '', 0),  # ps2 to only create containers which don't exist
             ('Created one-12345678', '', 0),
             ('Created two-12345678', '', 0),
             ('Created three-12345678', '', 0),
@@ -119,6 +122,14 @@ class TestBaseBuilder(base.TestCase):
                  '--format', '{{.Names}} {{.Label "container_name"}}'],
                 mock.ANY
             ),
+            # ps2 for delete_missing_and_updated container_names
+            mock.call(
+                ['docker', 'ps', '-a',
+                 '--filter', 'label=managed_by=paunch',
+                 '--filter', 'label=config_id=foo',
+                 '--format', '{{.Names}} {{.Label "container_name"}}'],
+                mock.ANY
+            ),
             # ps for after delete_missing_and_updated renames
             mock.call(
                 ['docker', 'ps', '-a',
@@ -126,10 +137,25 @@ class TestBaseBuilder(base.TestCase):
                  '--format', '{{.Names}} {{.Label "container_name"}}'],
                 mock.ANY
             ),
+            # ps2 for after delete_missing_and_updated renames
+            mock.call(
+                ['docker', 'ps', '-a',
+                 '--filter', 'label=managed_by=paunch',
+                 '--format', '{{.Names}} {{.Label "container_name"}}'],
+                mock.ANY
+            ),
             # ps to only create containers which don't exist
             mock.call(
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
+                 '--filter', 'label=config_id=foo',
+                 '--format', '{{.Names}} {{.Label "container_name"}}'],
+                mock.ANY
+            ),
+            # ps2 to only create containers which don't exist
+            mock.call(
+                ['docker', 'ps', '-a',
+                 '--filter', 'label=managed_by=paunch',
                  '--filter', 'label=config_id=foo',
                  '--format', '{{.Names}} {{.Label "container_name"}}'],
                 mock.ANY
@@ -233,6 +259,8 @@ three-12345678 three''', '', 0),
             ('{"start_order": 2, "image": "centos:7"}', '', 0),
             # ps for after delete_missing_and_updated renames
             ('', '', 0),
+            # ps2 for after delete_missing_and_updated renames
+            ('', '', 0),
             # ps to only create containers which don't exist
             ('three-12345678 three', '', 0),
             ('Created one-12345678', '', 0),
@@ -285,6 +313,13 @@ three-12345678 three''', '', 0),
             mock.call(
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
+                 '--format', '{{.Names}} {{.Label "container_name"}}'],
+                mock.ANY
+            ),
+            # ps2 for after delete_missing_and_updated renames
+            mock.call(
+                ['docker', 'ps', '-a',
+                 '--filter', 'label=managed_by=paunch',
                  '--format', '{{.Names}} {{.Label "container_name"}}'],
                 mock.ANY
             ),

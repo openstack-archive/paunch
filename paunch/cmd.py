@@ -95,7 +95,7 @@ class Apply(command.Command):
         stdout, stderr, rc = paunch.apply(
             parsed_args.config_id,
             config,
-            managed_by='paunch',
+            managed_by=parsed_args.managed_by,
             labels=labels,
             cont_cmd=parsed_args.default_runtime,
             log_level=log_level,
