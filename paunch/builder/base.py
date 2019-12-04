@@ -295,7 +295,7 @@ class BaseBuilder(object):
                     continue
             else:
                 img_exist = self.runner.image_exist(image)
-                if img_exist == 0:
+                if img_exist:
                     continue
 
             try:
