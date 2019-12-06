@@ -49,6 +49,7 @@ class BaseBuilder(object):
         deploy_status_code = 0
         key_fltr = lambda k: self.config[k].get('start_order', 0)
 
+        failed_containers = []
         container_names = self.runner.container_names(self.config_id)
         desired_names = set([cn[-1] for cn in container_names])
 
@@ -119,6 +120,7 @@ class BaseBuilder(object):
             if not validations_passed:
                 self.log.debug('Validations failed. Skipping container: %s' %
                                container)
+                failed_containers.append(container)
                 continue
 
             (cmd_stdout, cmd_stderr, returncode) = self.runner.execute(
@@ -150,6 +152,18 @@ class BaseBuilder(object):
                             container=container_name,
                             cconfig=cconfig,
                             log=self.log)
+
+        if failed_containers:
+            message = (
+                "The following containers failed validations "
+                "and were not started: {}".format(
+                    ', '.join(failed_containers)))
+            self.log.error(message)
+            # The message is also added to stderr so that it's returned and
+            # logged by the paunch module for ansible
+            stderr.append(message)
+            deploy_status_code = 1
+
         return stdout, stderr, deploy_status_code
 
     def delete_missing_and_updated(self):
