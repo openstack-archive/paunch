@@ -585,6 +585,7 @@ three-12345678 three''', '', 0),
             'one': {
                 'command': 'ls -l /foo',
                 'privileged': True,
+                'environment': {'FOO': 'BAR'},
                 'user': 'bar'
             }
         }
@@ -596,6 +597,7 @@ three-12345678 three''', '', 0),
         self.assertEqual(
             ['docker', 'exec',
              '--privileged=true', '--user=bar',
+             '--env=FOO=BAR',
              'one-12345678', '-l', '/foo'],
             cmd
         )
