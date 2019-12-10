@@ -276,6 +276,7 @@ class BaseBuilder(object):
             cmd.append('--privileged=%s' % str(cconfig['privileged']).lower())
         if 'user' in cconfig:
             cmd.append('--user=%s' % cconfig['user'])
+        self.list_or_dict_arg(cconfig, cmd, 'environment', '--env')
         command = self.command_argument(cconfig.get('command'))
         # for exec, the first argument is the container name,
         # make sure the correct one is used
