@@ -220,6 +220,10 @@ class ComposeV1Builder(object):
             cmd.append('--privileged=%s' % str(cconfig['privileged']).lower())
         if 'user' in cconfig:
             cmd.append('--user=%s' % cconfig['user'])
+        # TODO(sbaker): support the dict layout for this property
+        for v in cconfig.get('environment', []):
+            if v:
+                cmd.append('--env=%s' % v)
         command = self.command_argument(cconfig.get('command'))
         # for exec, the first argument is the container name,
         # make sure the correct one is used
