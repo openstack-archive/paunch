@@ -195,6 +195,7 @@ Requisite=%(service)s.service
 [Service]
 Type=oneshot
 ExecStart=/usr/bin/podman exec %(name)s %(test)s
+SyslogIdentifier=healthcheck_%(name)s
 [Install]
 WantedBy=multi-user.target
 """ % s_config)
