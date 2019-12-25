@@ -1,15 +1,11 @@
 - project:
     templates:
-      - openstack-python3-ussuri-jobs
       - check-requirements
+      - openstack-python3-ussuri-jobs
       - publish-openstack-docs-pti
-      - openstack-python-jobs
       - release-notes-jobs-python3
     check:
       jobs:
-        - openstack-tox-pep8
-        - openstack-tox-py36
-        - openstack-tox-py37
         - tripleo-ci-centos-8-scenario004-standalone:
             dependencies:
               - openstack-tox-pep8
