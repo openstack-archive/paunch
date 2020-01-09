@@ -39,8 +39,10 @@ class TestUtilsCommonConfig(base.TestCase):
     def setUp(self):
         super(TestUtilsCommonConfig, self).setUp()
         self.config_content = "{'image': 'docker.io/haproxy'}"
+        self.config_override = {'haproxy': {'image': 'quay.io/haproxy'}}
         self.open_func = 'paunch.utils.common.open'
         self.expected_config = {'haproxy': {'image': 'docker.io/haproxy'}}
+        self.expected_config_over = {'haproxy': {'image': 'quay.io/haproxy'}}
         self.container = 'haproxy'
         self.old_config_file = '/var/lib/tripleo-config/' + \
                                'hashed-container-startup-config-step_1.json'
@@ -104,3 +106,13 @@ class TestUtilsCommonConfig(base.TestCase):
             self.assertEqual(
                 self.expected_config,
                 common.load_config(self.old_config_file))
+
+    @mock.patch('os.path.isdir')
+    def test_load_config_dir_with_name_and_override(self, mock_isdir):
+        mock_isdir.return_value = True
+        mock_open = mock.mock_open(read_data=self.config_content)
+        with mock.patch(self.open_func, mock_open):
+            self.assertEqual(
+                self.expected_config_over,
+                common.load_config('/config_dir', self.container,
+                                   self.config_override))
