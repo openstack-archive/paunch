@@ -86,8 +86,10 @@ def get_all_cpus(**args):
     return "0-" + str(psutil.cpu_count() - 1)
 
 
-def load_config(config, name=None):
+def load_config(config, name=None, overrides=None):
     container_config = {}
+    if overrides is None:
+        overrides = {}
     if os.path.isdir(config):
         # When the user gives a config directory and specify a container name,
         # we return the container config for that specific container.
@@ -150,4 +152,11 @@ def load_config(config, name=None):
             with open(os.path.join(config), 'r') as f:
                 container_config[name] = {}
                 container_config[name].update(yaml.safe_load(f))
+
+    # Overrides
+    for k in overrides.keys():
+        if k in container_config:
+            for mk, mv in overrides[k].items():
+                container_config[k][mk] = mv
+
     return container_config
