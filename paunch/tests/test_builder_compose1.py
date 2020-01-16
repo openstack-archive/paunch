@@ -283,13 +283,13 @@ three-12345678 three''', '', 0),
                  '--format', '{{.Names}} {{.Label "container_name"}}']
             ),
             # rm containers not in config
-            mock.call(['docker', 'rm', '-f', 'five']),
-            mock.call(['docker', 'rm', '-f', 'six']),
+            mock.call(['docker', 'rm', 'five']),
+            mock.call(['docker', 'rm', 'six']),
             # rm two, changed config
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',
                        'two-12345678']),
-            mock.call(['docker', 'rm', '-f', 'two-12345678']),
+            mock.call(['docker', 'rm', 'two-12345678']),
             # check three, config hasn't changed
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',

@@ -95,7 +95,7 @@ class TestDockerRunner(base.TestCase):
 
         self.runner.remove_container('one')
         self.assert_execute(
-            popen, ['docker', 'rm', '-f', 'one']
+            popen, ['docker', 'rm', 'one']
         )
 
     @mock.patch('subprocess.Popen')

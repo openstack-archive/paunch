@@ -96,7 +96,7 @@ class DockerRunner(object):
             self.remove_container(container)
 
     def remove_container(self, container):
-        cmd = [self.docker_cmd, 'rm', '-f', container]
+        cmd = [self.docker_cmd, 'rm', container]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd)
         if returncode != 0:
             LOG.error('Error removing container: %s' % container)
