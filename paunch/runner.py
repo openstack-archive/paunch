@@ -283,7 +283,8 @@ class BaseRunner(object):
     def remove_container(self, container):
         if self.cont_cmd == 'podman':
             systemd.service_delete(container=container, log=self.log)
-        cmd = [self.cont_cmd, 'rm', '-f', container]
+        self.execute([self.cont_cmd, 'stop', container], self.log)
+        cmd = [self.cont_cmd, 'rm', container]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
             self.log.error('Error removing container: %s' % container)
