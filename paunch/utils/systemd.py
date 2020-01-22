@@ -193,7 +193,7 @@ After=paunch-container-shutdown.service %(service)s.service
 Requisite=%(service)s.service
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/podman exec %(name)s %(test)s
+ExecStart=/usr/bin/podman exec --user root %(name)s %(test)s
 SyslogIdentifier=healthcheck_%(name)s
 [Install]
 WantedBy=multi-user.target
