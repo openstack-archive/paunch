@@ -122,7 +122,7 @@ class TestUtilsSystemd(base.TestCase):
         unit = open(sysd_unit_f, 'rt').read()
 
         self.assertIn('Requisite=tripleo_my_app.service', unit)
-        self.assertIn('ExecStart=/usr/bin/podman exec my_app '
+        self.assertIn('ExecStart=/usr/bin/podman exec --user root my_app '
                       '/openstack/healthcheck', unit)
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
 
@@ -137,7 +137,7 @@ class TestUtilsSystemd(base.TestCase):
 
         systemd.healthcheck_create(container, tempdir, test=check)
         unit = open(sysd_unit_f, 'rt').read()
-        self.assertIn('ExecStart=/usr/bin/podman exec my_app '
+        self.assertIn('ExecStart=/usr/bin/podman exec --user root my_app '
                       '/foo/bar baz', unit)
 
     @mock.patch('subprocess.check_call', autospec=True)
