@@ -99,6 +99,7 @@ Wants=%(wants)s
 [Service]
 Restart=%(restart)s
 ExecStart=%(start_cmd)s
+ExecReload=/usr/bin/podman kill --signal HUP %(name)s
 ExecStop=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
 KillMode=none
 Type=forking
