@@ -17,9 +17,10 @@ from paunch.utils import common
 
 class ComposeV1Builder(base.BaseBuilder):
 
-    def __init__(self, config_id, config, runner, labels=None, log=None):
+    def __init__(self, config_id, config, runner, labels=None, log=None,
+                 cleanup=True):
         super(ComposeV1Builder, self).__init__(config_id, config, runner,
-                                               labels, log)
+                                               labels, log, cleanup)
 
     def container_run_args(self, cmd, container, delegate=None):
         """Prepare the run command args, from the container configuration.

@@ -19,10 +19,10 @@ from paunch.utils import common
 class PodmanBuilder(base.BaseBuilder):
 
     def __init__(self, config_id, config, runner, labels=None, log=None,
-                 cont_log_path=None, healthcheck_disabled=False):
+                 cont_log_path=None, healthcheck_disabled=False, cleanup=True):
         super(PodmanBuilder, self).__init__(config_id, config, runner,
                                             labels, log, cont_log_path,
-                                            healthcheck_disabled)
+                                            healthcheck_disabled, cleanup)
 
     def container_run_args(self, cmd, container, delegate=None):
         """Prepare the run command args, from the container configuration.

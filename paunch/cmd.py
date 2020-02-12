@@ -79,6 +79,13 @@ class Apply(command.Command):
             default=False,
             help=('Whether or not we disable the containers healthchecks')
         )
+        parser.add_argument(
+            '--cleanup',
+            dest='cleanup',
+            action='store_true',
+            default=True,
+            help=('Whether or not we delete containers missing in the config')
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -101,7 +108,8 @@ class Apply(command.Command):
             log_level=log_level,
             log_file=log_file,
             cont_log_path=parsed_args.cont_log_path,
-            healthcheck_disabled=parsed_args.healthcheck_disabled
+            healthcheck_disabled=parsed_args.healthcheck_disabled,
+            cleanup=parsed_args.cleanup
         )
 
         return rc

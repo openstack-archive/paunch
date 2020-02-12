@@ -26,7 +26,7 @@ from paunch.utils import systemd
 class BaseBuilder(object):
 
     def __init__(self, config_id, config, runner, labels, log=None,
-                 cont_log_path=None, healthcheck_disabled=False):
+                 cont_log_path=None, healthcheck_disabled=False, cleanup=True):
         self.config_id = config_id
         self.config = config
         self.labels = labels
@@ -35,6 +35,7 @@ class BaseBuilder(object):
         self.log = log or common.configure_logging(__name__)
         self.cont_log_path = cont_log_path
         self.healthcheck_disabled = healthcheck_disabled
+        self.cleanup = cleanup
 
         if os.path.isfile('/var/lib/tripleo-config/.ansible-managed'):
             msg = ('Containers were previously deployed with '
@@ -178,8 +179,13 @@ class BaseBuilder(object):
 
             # if the desired name is not in the config, delete it
             if cn[-1] not in self.config:
-                self.log.debug("Deleting container (removed): %s" % container)
-                self.runner.remove_container(container)
+                if self.cleanup:
+                    self.log.debug("Deleting container (removed): "
+                                   "%s" % container)
+                    self.runner.remove_container(container)
+                else:
+                    self.log.debug("Skipping container (cleanup disabled): "
+                                   "%s" % container)
                 continue
 
             ex_data_str = self.runner.inspect(
