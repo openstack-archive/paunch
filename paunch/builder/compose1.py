@@ -11,6 +11,7 @@
 #   under the License.
 #
 
+import itertools
 import json
 import tenacity
 import yaml
@@ -36,15 +37,29 @@ class ComposeV1Builder(object):
         if pull_returncode != 0:
             return stdout, stderr, pull_returncode
 
-        self.delete_missing_and_updated()
-
         deploy_status_code = 0
         key_fltr = lambda k: self.config[k].get('start_order', 0)
 
         container_names = self.runner.container_names(self.config_id)
+
+        # Cleanup containers missing from the config.
+        # Also applying new containers configs is an opportunity for
+        # renames to their preferred names.
+        changed = self.delete_missing(container_names)
+        changed |= self.runner.rename_containers()
+        if changed:
+            # If anything has been changed, refresh the container_names
+            container_names = self.runner.container_names(self.config_id)
         desired_names = set([cn[-1] for cn in container_names])
 
         for container in sorted(self.config, key=key_fltr):
+            # Before creating the container, figure out if it needs to be
+            # removed because of its configuration has changed.
+            # If anything has been deleted, refresh the container_names/desired
+            if self.delete_updated(container, container_names):
+                container_names = self.runner.container_names(self.config_id)
+                desired_names = set([cn[-1] for cn in container_names])
+
             self.log.debug("Running container: %s" % container)
             action = self.config[container].get('action', 'run')
             exit_codes = self.config[container].get('exit_codes', [0])
@@ -87,39 +102,44 @@ class ComposeV1Builder(object):
                 self.log.info("stderr: %s" % cmd_stderr)
         return stdout, stderr, deploy_status_code
 
-    def delete_missing_and_updated(self):
-        container_names = self.runner.container_names(self.config_id)
+    def delete_missing(self, container_names):
+        deleted = False
         for cn in container_names:
             container = cn[0]
-
             # if the desired name is not in the config, delete it
             if cn[-1] not in self.config:
-                self.log.debug("Deleting container (removed): %s" % container)
+                self.log.debug("Deleting container (removed): "
+                               "%s" % container)
                 self.runner.remove_container(container)
-                continue
+                deleted = True
+        return deleted
 
-            ex_data_str = self.runner.inspect(
-                container, '{{index .Config.Labels "config_data"}}')
-            if not ex_data_str:
-                self.log.debug("Deleting container (no config_data): %s" %
-                               container)
-                self.runner.remove_container(container)
-                continue
+    def delete_updated(self, container, container_names):
+        # If a container is not deployed, there is nothing to delete
+        if (container not in
+           list(itertools.chain.from_iterable(container_names))):
+            return False
 
-            try:
-                ex_data = yaml.safe_load(str(ex_data_str))
-            except Exception:
-                ex_data = None
+        ex_data_str = self.runner.inspect(
+            container, '{{index .Config.Labels "config_data"}}')
+        if not ex_data_str:
+            self.log.debug("Deleting container (no_config_data): "
+                           "%s" % container)
+            self.runner.remove_container(container)
+            return True
 
-            new_data = self.config.get(cn[-1])
-            if new_data != ex_data:
-                self.log.debug("Deleting container (changed config_data): %s" %
-                               container)
-                self.runner.remove_container(container)
+        try:
+            ex_data = yaml.safe_load(str(ex_data_str))
+        except Exception:
+            ex_data = None
 
-        # deleting containers is an opportunity for renames to their
-        # preferred name
-        self.runner.rename_containers()
+        new_data = self.config[container]
+        if new_data != ex_data:
+            self.log.debug("Deleting container (changed config_data): %s"
+                           % container)
+            self.runner.remove_container(container)
+            return True
+        return False
 
     def label_arguments(self, cmd, container):
         if self.labels:

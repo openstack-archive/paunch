@@ -101,13 +101,16 @@ class DockerRunner(object):
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
             return
+        result = []
         for line in cmd_stdout.split("\n"):
             if line:
-                yield line.split()
+                result.append(line.split())
+        return result
 
     def rename_containers(self):
         current_containers = []
         need_renaming = {}
+        renamed = False
         for entry in self.container_names():
             current_containers.append(entry[0])
 
@@ -129,7 +132,9 @@ class DockerRunner(object):
                 self.log.info('Renaming "%s" to "%s"' % (
                     current, desired))
                 self.rename_container(current, desired)
+                renamed = True
                 current_containers.append(desired)
+        return renamed
 
     def rename_container(self, container, name):
         cmd = [self.docker_cmd, 'rename', container, name]
