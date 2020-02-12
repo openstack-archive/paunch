@@ -31,7 +31,8 @@ class TestPaunchDockerRuntime(base.TestCase):
             config={'bar': 'baz'},
             runner=runner.return_value,
             labels=None,
-            log=mock.ANY
+            log=mock.ANY,
+            cleanup=True
         )
         builder.return_value.apply.assert_called_once_with()
 
@@ -52,7 +53,8 @@ class TestPaunchDockerRuntime(base.TestCase):
             config={'bar': 'baz'},
             runner=runner.return_value,
             labels={'bink': 'boop'},
-            log=mock.ANY
+            log=mock.ANY,
+            cleanup=True
         )
         builder.return_value.apply.assert_called_once_with()
 
@@ -119,7 +121,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             labels=None,
             log=mock.ANY,
             cont_log_path=None,
-            healthcheck_disabled=False
+            healthcheck_disabled=False,
+            cleanup=True
         )
         builder.return_value.apply.assert_called_once_with()
 
@@ -143,7 +146,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             labels=None,
             log=mock.ANY,
             cont_log_path='/var/log',
-            healthcheck_disabled=False
+            healthcheck_disabled=False,
+            cleanup=True
         )
         builder.return_value.apply.assert_called_once_with()
 
@@ -168,7 +172,8 @@ class TestPaunchPodmanRuntime(base.TestCase):
             labels={'bink': 'boop'},
             log=mock.ANY,
             cont_log_path=None,
-            healthcheck_disabled=False
+            healthcheck_disabled=False,
+            cleanup=True
         )
         builder.return_value.apply.assert_called_once_with()
 

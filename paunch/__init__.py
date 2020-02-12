@@ -26,7 +26,7 @@ __version__ = pbr.version.VersionInfo('paunch').version_string()
 
 def apply(config_id, config, managed_by, labels=None, cont_cmd='podman',
           default_runtime=None, log_level=None, log_file=None,
-          cont_log_path=None, healthcheck_disabled=False):
+          cont_log_path=None, healthcheck_disabled=False, cleanup=True):
     """Execute supplied container configuration.
 
     :param str config_id: Unique config ID, should not be re-used until any
@@ -46,6 +46,8 @@ def apply(config_id, config, managed_by, labels=None, cont_cmd='podman',
                               podman engine. Must be an absolute path.
     :param bool healthcheck_disabled: optional boolean to disable container
                                       healthcheck.
+    :param bool cleanup: optional boolean to delete containers missing in the
+                         config.
 
     :returns (list, list, int) lists of stdout and stderr for each execution,
                                and a single return code representing the
@@ -66,7 +68,8 @@ def apply(config_id, config, managed_by, labels=None, cont_cmd='podman',
             labels=labels,
             log=log,
             cont_log_path=cont_log_path,
-            healthcheck_disabled=healthcheck_disabled
+            healthcheck_disabled=healthcheck_disabled,
+            cleanup=cleanup
         )
     else:
         r = runner.DockerRunner(managed_by, cont_cmd=cont_cmd, log=log)
@@ -75,7 +78,8 @@ def apply(config_id, config, managed_by, labels=None, cont_cmd='podman',
             config=config,
             runner=r,
             labels=labels,
-            log=log
+            log=log,
+            cleanup=cleanup
         )
     return builder.apply()
 
