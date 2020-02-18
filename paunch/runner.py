@@ -287,8 +287,14 @@ class BaseRunner(object):
         cmd = [self.cont_cmd, 'rm', container]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
-            self.log.error('Error removing container: %s' % container)
+            self.log.error('Error removing container '
+                           'gracefully: %s' % container)
             self.log.error(cmd_stderr)
+            cmd = [self.cont_cmd, 'rm', '-f', container]
+            cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
+            if returncode != 0:
+                self.log.error('Error removing container: %s' % container)
+                self.log.error(cmd_stderr)
 
     def stop_container(self, container, cont_cmd=None, quiet=False):
         cont_cmd = cont_cmd or self.cont_cmd
