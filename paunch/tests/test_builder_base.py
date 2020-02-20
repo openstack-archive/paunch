@@ -246,12 +246,18 @@ class TestBaseBuilder(base.TestCase):
 six six
 two-12345678 two
 three-12345678 three''', '', 0),
+            # stop five
+            ('', '', 0),
             # rm five
+            ('', '', 0),
+            # stop six
             ('', '', 0),
             # rm six
             ('', '', 0),
             # inspect two
             ('{"start_order": 1, "image": "centos:6"}', '', 0),
+            # stop two, changed config data
+            ('', '', 0),
             # rm two, changed config data
             ('', '', 0),
             # inspect three
@@ -297,13 +303,16 @@ three-12345678 three''', '', 0),
                 mock.ANY
             ),
             # rm containers not in config
-            mock.call(['docker', 'rm', '-f', 'five'], mock.ANY),
-            mock.call(['docker', 'rm', '-f', 'six'], mock.ANY),
+            mock.call(['docker', 'stop', 'five'], mock.ANY),
+            mock.call(['docker', 'rm', 'five'], mock.ANY),
+            mock.call(['docker', 'stop', 'six'], mock.ANY),
+            mock.call(['docker', 'rm', 'six'], mock.ANY),
             # rm two, changed config
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',
                        'two-12345678'], mock.ANY, False),
-            mock.call(['docker', 'rm', '-f', 'two-12345678'], mock.ANY),
+            mock.call(['docker', 'stop', 'two-12345678'], mock.ANY),
+            mock.call(['docker', 'rm', 'two-12345678'], mock.ANY),
             # check three, config hasn't changed
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',
