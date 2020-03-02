@@ -11,7 +11,7 @@
         - openstack-tox-py27
         - openstack-tox-py36
         - openstack-tox-py37
-        - tripleo-ci-centos-7-scenario004-standalone:
+        - tripleo-ci-centos-8-scenario004-standalone:
             dependencies:
               - openstack-tox-pep8
               - openstack-tox-py27
@@ -28,5 +28,5 @@
     gate:
       queue: tripleo
       jobs:
-        - tripleo-ci-centos-7-scenario004-standalone:
+        - tripleo-ci-centos-8-scenario004-standalone:
             irrelevant-files: *standalone_ignored
