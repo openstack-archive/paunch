@@ -272,9 +272,11 @@ class BaseRunner(object):
             if returncode != 0:
                 return
             results += cmd_stdout.split("\n")
+        result = []
         for line in results:
             if line:
-                yield line.split()
+                result.append(line.split())
+        return result
 
     def remove_containers(self, conf_id):
         for container in self.containers_in_config(conf_id):
@@ -307,6 +309,7 @@ class BaseRunner(object):
     def rename_containers(self):
         current_containers = []
         need_renaming = {}
+        renamed = False
         for entry in self.container_names():
             current_containers.append(entry[0])
 
@@ -327,7 +330,9 @@ class BaseRunner(object):
             else:
                 self.log.info('Renaming "%s" to "%s"' % (current, desired))
                 self.rename_container(current, desired)
+                renamed = True
                 current_containers.append(desired)
+        return renamed
 
     def validate_volume_source(self, volume):
         """Validate that the provided volume
