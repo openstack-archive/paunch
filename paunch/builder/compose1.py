@@ -195,7 +195,7 @@ class ComposeV1Builder(object):
             cmd.append('--cpu-shares=%s' % cconfig['cpu_shares'])
         if 'security_opt' in cconfig:
             cmd.append('--security-opt=%s' % cconfig['security_opt'])
-        if 'cpuset_cpus' in cconfig:
+        if 'cpuset_cpus' in cconfig and cconfig['cpuset_cpus'] != '':
             # 'all' is a special value to directly configure all CPUs
             # that are available.
             if cconfig['cpuset_cpus'] == 'all':
