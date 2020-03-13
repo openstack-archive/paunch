@@ -82,7 +82,7 @@ class ComposeV1Builder(base.BaseBuilder):
         for extra_host in cconfig.get('extra_hosts', []):
             if extra_host:
                 cmd.append('--add-host=%s' % extra_host)
-        if 'cpuset_cpus' in cconfig:
+        if 'cpuset_cpus' in cconfig and cconfig['cpuset_cpus'] != '':
             # 'all' is a special value to directly configure all CPUs
             # that are available.
             if cconfig['cpuset_cpus'] == 'all':
