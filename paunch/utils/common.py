@@ -26,14 +26,6 @@ def get_cpus_allowed_list(**args):
     return ','.join([str(c) for c in psutil.Process().cpu_affinity()])
 
 
-def get_all_cpus(**args):
-    """Returns a single list of all CPUs.
-
-    :return: Value computed by psutil, e.g. '0-3'
-    """
-    return "0-" + str(psutil.cpu_count() - 1)
-
-
 def configure_logging(name, level=3, log_file=None):
     '''Mimic oslo_log default levels and formatting for the logger. '''
     log = logging.getLogger(name)
