@@ -41,6 +41,7 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
                 'env_file': '/tmp/foo.env',
                 'log_tag': '{{.ImageName}}/{{.Name}}/{{.ID}}',
                 'cpu_shares': 600,
+                'cpuset_cpus': 'all',
                 'mem_limit': '1G',
                 'memswap_limit': '1G',
                 'mem_swappiness': '60',
@@ -77,7 +78,6 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
              '--hostname=foohostname',
              '--add-host=foohost:127.0.0.1',
              '--add-host=barhost:127.0.0.2',
-             '--cpuset-cpus=0,1,2,3',
              '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
              'centos:7'],
             cmd

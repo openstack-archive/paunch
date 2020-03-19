@@ -78,14 +78,6 @@ def get_cpus_allowed_list(**args):
     return ','.join([str(c) for c in psutil.Process().cpu_affinity()])
 
 
-def get_all_cpus(**args):
-    """Returns a single list of all CPUs.
-
-    :return: Value computed by psutil, e.g. '0-3'
-    """
-    return "0-" + str(psutil.cpu_count() - 1)
-
-
 def load_config(config, name=None, overrides=None):
     container_config = {}
     if overrides is None:
