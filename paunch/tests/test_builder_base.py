@@ -36,7 +36,6 @@ class TestBaseBuilder(base.TestCase):
             'one': {
                 'start_order': 0,
                 'image': 'centos:7',
-                'cpuset_cpus': '',
             },
             'two': {
                 'start_order': 1,
