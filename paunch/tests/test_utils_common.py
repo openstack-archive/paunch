@@ -26,9 +26,3 @@ class TestUtilsCommon(base.TestCase):
         expected_list = '0,1,2,3'
         actual_list = common.get_cpus_allowed_list()
         self.assertEqual(actual_list, expected_list)
-
-    @mock.patch("psutil.cpu_count", return_value=4)
-    def test_get_all_cpus(self, mock_cpu):
-        expected_list = '0-3'
-        actual_list = common.get_all_cpus()
-        self.assertEqual(actual_list, expected_list)

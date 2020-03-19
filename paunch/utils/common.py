@@ -73,11 +73,3 @@ def get_cpus_allowed_list(**args):
     :return: Value for Cpus_allowed, e.g. '0-3'
     """
     return ','.join([str(c) for c in psutil.Process().cpu_affinity()])
-
-
-def get_all_cpus(**args):
-    """Returns a single list of all CPUs.
-
-    :return: Value computed by psutil, e.g. '0-3'
-    """
-    return "0-" + str(psutil.cpu_count() - 1)

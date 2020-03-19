@@ -77,12 +77,13 @@ class ComposeV1Builder(base.BaseBuilder):
         self.string_arg(cconfig, cmd, 'mem_swappiness', '--memory-swappiness')
         self.string_arg(cconfig, cmd, 'security_opt', '--security-opt')
         self.string_arg(cconfig, cmd, 'stop_signal', '--stop-signal')
-        if 'cpuset_cpus' in cconfig and cconfig['cpuset_cpus'] != '':
+        if 'cpuset_cpus' in cconfig:
             # 'all' is a special value to directly configure all CPUs
-            # that are available.
-            if cconfig['cpuset_cpus'] == 'all':
-                cmd.append('--cpuset-cpus=%s' % common.get_all_cpus())
-            else:
+            # that are available. Without specifying --cpuset-cpus, we'll
+            # let the container engine to figure out what CPUs are online.
+            # https://bugs.launchpad.net/tripleo/+bug/1868135
+            # https://bugzilla.redhat.com/show_bug.cgi?id=1813091
+            if cconfig['cpuset_cpus'] != 'all':
                 cmd.append('--cpuset-cpus=%s' % cconfig['cpuset_cpus'])
         else:
             cmd.append('--cpuset-cpus=%s' % common.get_cpus_allowed_list())
