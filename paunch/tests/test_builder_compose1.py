@@ -26,7 +26,9 @@ from paunch.tests import base
 class TestComposeV1Builder(base.TestCase):
 
     @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_apply(self, mock_cpu):
+    @mock.patch("paunch.builder.compose1.ComposeV1Builder.delete_updated",
+                return_value=False)
+    def test_apply(self, mock_delete_updated, mock_cpu):
         orig_call = tenacity.wait.wait_random_exponential.__call__
         orig_argspec = inspect.getargspec(orig_call)
         config = {
@@ -60,14 +62,24 @@ class TestComposeV1Builder(base.TestCase):
             ('', '', 1),  # inspect for missing image centos:7
             ('Pulled centos:7', 'ouch', 1),  # pull centos:6 fails
             ('Pulled centos:7', '', 0),  # pull centos:6 succeeds
-            ('', '', 0),  # ps for delete_missing_and_updated container_names
-            ('', '', 0),  # ps for after delete_missing_and_updated renames
-            ('', '', 0),  # ps to only create containers which don't exist
+            # container_names for delete_missing
+            ('''five five
+six six
+two two
+three-12345678 three''', '', 0),
+            ('', '', 0),  # stop five
+            ('', '', 0),  # rm five
+            ('', '', 0),  # stop six
+            ('', '', 0),  # rm six
+            # container_names for rename_containers
+            ('three-12345678 three', '', 0),
+            ('', '', 0),  # rename three
+            # desired/container_names to be refreshed after delete/rename
+            ('three three', '', 0),  # renamed three already exists
             ('Created one-12345678', '', 0),
             ('Created two-12345678', '', 0),
-            ('Created three-12345678', '', 0),
             ('Created four-12345678', '', 0),
-            ('a\nb\nc', '', 0)
+            ('a\nb\nc', '', 0)  # exec four
         ]
         r.discover_container_name = lambda n, c: '%s-12345678' % n
         r.unique_container_name = lambda n: '%s-12345678' % n
@@ -85,7 +97,6 @@ class TestComposeV1Builder(base.TestCase):
             'Pulled centos:7',
             'Created one-12345678',
             'Created two-12345678',
-            'Created three-12345678',
             'Created four-12345678',
             'a\nb\nc'
         ], stdout)
@@ -110,7 +121,7 @@ class TestComposeV1Builder(base.TestCase):
             mock.call(
                 ['docker', 'pull', 'centos:7'], mock.ANY
             ),
-            # ps for delete_missing_and_updated container_names
+            # container_names for delete_missing
             mock.call(
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
@@ -118,14 +129,22 @@ class TestComposeV1Builder(base.TestCase):
                  '--format', '{{.Names}} {{.Label "container_name"}}'],
                 mock.ANY
             ),
-            # ps for after delete_missing_and_updated renames
+            # rm containers missing in config
+            mock.call(['docker', 'stop', 'five'], mock.ANY),
+            mock.call(['docker', 'rm', 'five'], mock.ANY),
+            mock.call(['docker', 'stop', 'six'], mock.ANY),
+            mock.call(['docker', 'rm', 'six'], mock.ANY),
+            # container_names for rename
             mock.call(
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
                  '--format', '{{.Names}} {{.Label "container_name"}}'],
                 mock.ANY
             ),
-            # ps to only create containers which don't exist
+            # rename three from an ephemeral to the static name
+            mock.call(['docker', 'rename', 'three-12345678', 'three'],
+                      mock.ANY),
+            # container_names to be refreshed after delete/rename
             mock.call(
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
@@ -151,16 +170,6 @@ class TestComposeV1Builder(base.TestCase):
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['two']),
                  '--detach=true', '--cpuset-cpus=0,1,2,3', 'centos:7'],
-                mock.ANY
-            ),
-            # run three
-            mock.call(
-                ['docker', 'run', '--name', 'three-12345678',
-                 '--label', 'config_id=foo',
-                 '--label', 'container_name=three',
-                 '--label', 'managed_by=tester',
-                 '--label', 'config_data=%s' % json.dumps(config['three']),
-                 '--detach=true', '--cpuset-cpus=0,1,2,3', 'centos:6'],
                 mock.ANY
             ),
             # run four
@@ -180,19 +189,22 @@ class TestComposeV1Builder(base.TestCase):
         ])
 
     @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_apply_idempotency(self, mock_cpu):
+    @mock.patch("paunch.runner.DockerRunner.container_names")
+    @mock.patch("paunch.runner.DockerRunner.discover_container_name",
+                return_value='one')
+    def test_apply_idempotency(self, mock_dname, mock_cnames, mock_cpu):
         config = {
-            # not running yet
+            # running with the same config and given an ephemeral name
             'one': {
                 'start_order': 0,
                 'image': 'centos:7',
             },
-            # running, but with a different config
+            # not running yet
             'two': {
                 'start_order': 1,
                 'image': 'centos:7',
             },
-            # running with the same config
+            # running, but with a different config
             'three': {
                 'start_order': 2,
                 'image': 'centos:7',
@@ -202,47 +214,46 @@ class TestComposeV1Builder(base.TestCase):
                 'start_order': 10,
                 'image': 'centos:7',
             },
-            'four_ls': {
+            'one_ls': {
                 'action': 'exec',
                 'start_order': 20,
-                'command': ['four', 'ls', '-l', '/']
+                'command': ['one', 'ls', '-l', '/']
             }
+            # five is running but is not managed by us
         }
-
+        # represents the state before and after renaming/removing things
+        mock_cnames.side_effect = (
+            # delete_missing
+            [['five', 'five'], ['one-12345678', 'one'], ['three', 'three']],
+            # rename_containers
+            [['one-12345678', 'one']],
+            # refresh container_names/desired after del/rename
+            [['one', 'one'], ['three', 'three']],
+            # refresh container_names/desired after delete_updated
+            [['one', 'one']]
+        )
         r = runner.DockerRunner(managed_by='tester', docker_cmd='docker')
         exe = mock.Mock()
         exe.side_effect = [
             # inspect for image centos:7
             ('exists', '', 0),
-            # ps for delete_missing_and_updated container_names
-            ('''five five
-six six
-two-12345678 two
-three-12345678 three''', '', 0),
             # stop five
             ('', '', 0),
             # rm five
             ('', '', 0),
-            # stop six
-            ('', '', 0),
-            # rm six
-            ('', '', 0),
-            # inspect two
-            ('{"start_order": 1, "image": "centos:6"}', '', 0),
-            # stop two, changed config data
-            ('', '', 0),
-            # rm two, changed config data
-            ('', '', 0),
-            # inspect three
-            ('{"start_order": 2, "image": "centos:7"}', '', 0),
-            # ps for after delete_missing_and_updated renames
-            ('', '', 0),
-            # ps to only create containers which don't exist
-            ('three-12345678 three', '', 0),
-            ('Created one-12345678', '', 0),
+            ('', '', 0),  # ps for rename one
+            # inspect one
+            ('{"start_order": 0, "image": "centos:7"}', '', 0),
             ('Created two-12345678', '', 0),
+            # inspect three
+            ('{"start_order": 42, "image": "centos:7"}', '', 0),
+            # stop three, changed config data
+            ('', '', 0),
+            # rm three, changed config data
+            ('', '', 0),
+            ('Created three-12345678', '', 0),
             ('Created four-12345678', '', 0),
-            ('a\nb\nc', '', 0)
+            ('a\nb\nc', '', 0)  # exec one
         ]
         r.discover_container_name = lambda n, c: '%s-12345678' % n
         r.unique_container_name = lambda n: '%s-12345678' % n
@@ -252,8 +263,8 @@ three-12345678 three''', '', 0),
         stdout, stderr, deploy_status_code = builder.apply()
         self.assertEqual(0, deploy_status_code)
         self.assertEqual([
-            'Created one-12345678',
             'Created two-12345678',
+            'Created three-12345678',
             'Created four-12345678',
             'a\nb\nc'
         ], stdout)
@@ -265,54 +276,17 @@ three-12345678 three''', '', 0),
                 ['docker', 'inspect', '--type', 'image',
                  '--format', 'exists', 'centos:7'], mock.ANY
             ),
-            # ps for delete_missing_and_updated container_names
-            mock.call(
-                ['docker', 'ps', '-a',
-                 '--filter', 'label=managed_by=tester',
-                 '--filter', 'label=config_id=foo',
-                 '--format', '{{.Names}} {{.Label "container_name"}}'],
-                mock.ANY
-            ),
             # rm containers not in config
             mock.call(['docker', 'stop', 'five'], mock.ANY),
             mock.call(['docker', 'rm', 'five'], mock.ANY),
-            mock.call(['docker', 'stop', 'six'], mock.ANY),
-            mock.call(['docker', 'rm', 'six'], mock.ANY),
-            # rm two, changed config
+            # rename one from an ephemeral to the static name
+            mock.call(['docker', 'rename', 'one-12345678', 'one'],
+                      mock.ANY),
+            # check the renamed one, config hasn't changed
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',
-                       'two-12345678'], mock.ANY),
-            mock.call(['docker', 'stop', 'two-12345678'], mock.ANY),
-            mock.call(['docker', 'rm', 'two-12345678'], mock.ANY),
-            # check three, config hasn't changed
-            mock.call(['docker', 'inspect', '--type', 'container',
-                       '--format', '{{index .Config.Labels "config_data"}}',
-                       'three-12345678'], mock.ANY),
-            # ps for after delete_missing_and_updated renames
-            mock.call(
-                ['docker', 'ps', '-a',
-                 '--filter', 'label=managed_by=tester',
-                 '--format', '{{.Names}} {{.Label "container_name"}}'],
-                mock.ANY
-            ),
-            # ps to only create containers which don't exist
-            mock.call(
-                ['docker', 'ps', '-a',
-                 '--filter', 'label=managed_by=tester',
-                 '--filter', 'label=config_id=foo',
-                 '--format', '{{.Names}} {{.Label "container_name"}}'],
-                mock.ANY
-            ),
-            # run one
-            mock.call(
-                ['docker', 'run', '--name', 'one-12345678',
-                 '--label', 'config_id=foo',
-                 '--label', 'container_name=one',
-                 '--label', 'managed_by=tester',
-                 '--label', 'config_data=%s' % json.dumps(config['one']),
-                 '--detach=true', '--cpuset-cpus=0,1,2,3', 'centos:7'],
-                mock.ANY
-            ),
+                       'one'], mock.ANY),
+            # don't run one, its already running
             # run two
             mock.call(
                 ['docker', 'run', '--name', 'two-12345678',
@@ -320,10 +294,25 @@ three-12345678 three''', '', 0),
                  '--label', 'container_name=two',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['two']),
-                 '--detach=true', '--cpuset-cpus=0,1,2,3', 'centos:7'],
-                mock.ANY
+                 '--detach=true', '--cpuset-cpus=0,1,2,3',
+                 'centos:7'], mock.ANY
             ),
-            # don't run three, its already running
+            # rm three, changed config
+            mock.call(['docker', 'inspect', '--type', 'container',
+                       '--format', '{{index .Config.Labels "config_data"}}',
+                       'three'], mock.ANY),
+            mock.call(['docker', 'stop', 'three'], mock.ANY),
+            mock.call(['docker', 'rm', 'three'], mock.ANY),
+            # run three
+            mock.call(
+                ['docker', 'run', '--name', 'three-12345678',
+                 '--label', 'config_id=foo',
+                 '--label', 'container_name=three',
+                 '--label', 'managed_by=tester',
+                 '--label', 'config_data=%s' % json.dumps(config['three']),
+                 '--detach=true', '--cpuset-cpus=0,1,2,3',
+                 'centos:7'], mock.ANY
+            ),
             # run four
             mock.call(
                 ['docker', 'run', '--name', 'four-12345678',
@@ -331,12 +320,14 @@ three-12345678 three''', '', 0),
                  '--label', 'container_name=four',
                  '--label', 'managed_by=tester',
                  '--label', 'config_data=%s' % json.dumps(config['four']),
-                 '--detach=true', '--cpuset-cpus=0,1,2,3', 'centos:7'],
-                mock.ANY
+                 '--detach=true', '--cpuset-cpus=0,1,2,3',
+                 'centos:7'], mock.ANY
             ),
-            # execute within four
+            # FIXME(bogdando): shall exec ls in the renamed one!
+            # Why discover_container_name is never called to get it as c_name?
             mock.call(
-                ['docker', 'exec', 'four-12345678', 'ls', '-l', '/'], mock.ANY
+                ['docker', 'exec', 'one-12345678', 'ls', '-l',
+                 '/'], mock.ANY
             ),
         ])
 
