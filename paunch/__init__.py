@@ -197,6 +197,7 @@ def debug(config_id, container_name, action, config, managed_by, labels=None,
             '--name',
             uname
         ]
+        builder.label_arguments(cmd, container_name)
         builder.container_run_args(cmd, container_name, uname)
 
         if '--health-cmd' in cmd:
@@ -219,6 +220,7 @@ def debug(config_id, container_name, action, config, managed_by, labels=None,
             '--name',
             uname
         ]
+        builder.label_arguments(cmd, container_name)
         if builder.container_run_args(cmd, container_name, uname):
             return r.execute_interactive(cmd, log)
     elif action == 'dump-yaml':
