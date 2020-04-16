@@ -43,6 +43,9 @@ class BaseBuilder(object):
                    'tripleo-ansible, paunch CLI can not be used.')
             raise RuntimeError(msg)
 
+        self.log.warning('Paunch is deprecated and has been replaced by '
+                         'tripleo_container_manage role in tripleo-ansible.')
+
     def apply(self):
 
         stdout = []
