@@ -15,8 +15,8 @@
 import collections
 import inspect
 import json
-import mock
 import tenacity
+from unittest import mock
 
 from paunch.builder import base as basebuilder
 from paunch.builder import compose1

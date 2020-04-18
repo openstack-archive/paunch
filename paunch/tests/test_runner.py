@@ -12,8 +12,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
-import mock
 from testtools import matchers
+from unittest import mock
 
 from paunch import runner
 from paunch.tests import base
