@@ -48,6 +48,9 @@ class BaseRunner(object):
         subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         cmd_stdout, cmd_stderr = subproc.communicate()
+        if subproc.returncode != 0:
+            log.error('Error executing %s: returned %s' % (cmd,
+                                                           subproc.returncode))
         if not quiet:
             log.debug(cmd_stdout)
             log.debug(cmd_stderr)
@@ -270,7 +273,7 @@ class BaseRunner(object):
             ))
             cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
             if returncode != 0:
-                return
+                return []
             results += cmd_stdout.split("\n")
         result = []
         for line in results:
