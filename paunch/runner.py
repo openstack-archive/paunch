@@ -36,6 +36,9 @@ class DockerRunner(object):
         subproc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         cmd_stdout, cmd_stderr = subproc.communicate()
+        if subproc.returncode != 0:
+            log.error('Error executing %s: returned %s' % (cmd,
+                                                           subproc.returncode))
         log.debug(cmd_stdout)
         log.debug(cmd_stderr)
         return (cmd_stdout.decode('utf-8'),
@@ -100,7 +103,7 @@ class DockerRunner(object):
         ))
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
         if returncode != 0:
-            return
+            return []
         result = []
         for line in cmd_stdout.split("\n"):
             if line:
