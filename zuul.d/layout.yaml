@@ -38,12 +38,6 @@
             dependencies: *deps_unit_lint
         - tripleo-ci-centos-7-scenario012-standalone:
             dependencies: *deps_unit_lint
-        - tripleo-ci-centos-7-containerized-undercloud-upgrades:
-            voting: true
-            dependencies: *deps_unit_lint
 
-    gate:
-      queue: tripleo
-      jobs:
-        - tripleo-ci-centos-7-containerized-undercloud-upgrades:
-            voting: true
+# TODO, add tripleo-ci-centos-8-containerized-undercloud-upgrades to check and gate
+# to replace tripleo-ci-centos-7-containerized-undercloud-upgrades
