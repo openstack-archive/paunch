@@ -36,9 +36,9 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # openstackdocstheme options
-repository_name = 'openstack/paunch'
-bug_project = 'paunch'
-bug_tag = ''
+openstackdocs_repo_name = 'openstack/paunch'
+openstackdocs_bug_project = 'paunch'
+openstackdocs_bug_tag = ''
 
 # General information about the project.
 
@@ -52,7 +52,7 @@ add_function_parentheses = True
 add_module_names = True
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'native'
 
 # -- Options for HTML output --------------------------------------------------
 

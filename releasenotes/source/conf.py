@@ -97,7 +97,7 @@ exclude_patterns = []
 # show_authors = False
 
 # The name of the Pygments (syntax highlighting) style to use.
-pygments_style = 'sphinx'
+pygments_style = 'native'
 
 # A list of ignored prefixes for module index sorting.
 # modindex_common_prefix = []
@@ -113,9 +113,9 @@ pygments_style = 'sphinx'
 html_theme = 'openstackdocs'
 
 # openstackdocstheme options
-repository_name = 'openstack/paunch'
-bug_project = 'paunch'
-bug_tag = 'docs'
+openstackdocs_repo_name = 'openstack/paunch'
+openstackdocs_bug_project = 'paunch'
+openstackdocs_bug_tag = 'docs'
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
