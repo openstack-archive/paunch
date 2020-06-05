@@ -1,4 +1,0 @@
-# Even if we do not build doc with python 2, we have to
-# push that content due to some global check.
-sphinx>=2.0.0,!=2.1.0 # BSD
-openstackdocstheme>=2.2.1 # Apache-2.0

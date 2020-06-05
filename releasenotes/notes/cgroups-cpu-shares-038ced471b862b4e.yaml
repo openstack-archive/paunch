@@ -1,5 +1,0 @@
----
-features:
-  - |
-    Add `--cpu-shares=xxx` option for the action run a container. Allows to
-    define upper `cpu.shares` limits in the cpu cgroup.

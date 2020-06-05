@@ -1,6 +1,0 @@
----
-features:
-  - |
-    docker learns 'hostname' which maps to docker run --hostname and
-    'extra_hosts' mapping to docker  run --add-host.
-

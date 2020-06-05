@@ -1,5 +1,0 @@
----
-features:
-  - |
-    When deploying with Podman, we can disable the container healthchecks by
-    using paunch apply --healtcheck-disabled.
