@@ -75,7 +75,7 @@ class ComposeV1Builder(base.BaseBuilder):
         self.string_arg(cconfig, cmd, 'mem_limit', '--memory')
         self.string_arg(cconfig, cmd, 'memswap_limit', '--memory-swap')
         self.string_arg(cconfig, cmd, 'mem_swappiness', '--memory-swappiness')
-        self.string_arg(cconfig, cmd, 'security_opt', '--security-opt')
+        self.list_or_string_arg(cconfig, cmd, 'security_opt', '--security-opt')
         self.string_arg(cconfig, cmd, 'stop_signal', '--stop-signal')
         if 'cpuset_cpus' in cconfig:
             # 'all' is a special value to directly configure all CPUs

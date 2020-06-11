@@ -85,7 +85,7 @@ class PodmanBuilder(base.BaseBuilder):
         self.string_arg(cconfig, cmd, 'mem_limit', '--memory')
         self.string_arg(cconfig, cmd, 'memswap_limit', '--memory-swap')
         self.string_arg(cconfig, cmd, 'mem_swappiness', '--memory-swappiness')
-        self.string_arg(cconfig, cmd, 'security_opt', '--security-opt')
+        self.list_or_string_arg(cconfig, cmd, 'security_opt', '--security-opt')
         self.string_arg(cconfig, cmd, 'stop_signal', '--stop-signal')
         self.string_arg(cconfig, cmd, 'hostname', '--hostname')
         for extra_host in cconfig.get('extra_hosts', []):
