@@ -20,8 +20,7 @@ from paunch.tests import test_builder_base as base
 
 class TestPodmanBuilder(base.TestBaseBuilder):
 
-    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_cont_run_args(self, mock_cpu):
+    def test_cont_run_args(self):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -67,16 +66,13 @@ class TestPodmanBuilder(base.TestBaseBuilder):
              '--hostname=foohostname',
              '--add-host=foohost:127.0.0.1',
              '--add-host=barhost:127.0.0.2',
-             '--cpuset-cpus=0,1,2,3',
              '--cap-add=SYS_ADMIN', '--cap-add=SETUID', '--cap-drop=NET_RAW',
              'centos:7'],
             cmd
         )
 
-    @mock.patch("psutil.Process.cpu_affinity",
-                return_value=[0, 1, 2, 3, 4, 5, 6, 7])
     @mock.patch('paunch.runner.PodmanRunner', autospec=True)
-    def test_cont_run_args_validation_true(self, runner, mock_cpu):
+    def test_cont_run_args_validation_true(self, runner):
         config = {
             'one': {
                 'image': 'foo',
@@ -90,15 +86,12 @@ class TestPodmanBuilder(base.TestBaseBuilder):
         self.assertTrue(builder.container_run_args(cmd, 'one'))
         self.assertEqual(
             ['podman', '--conmon-pidfile=/var/run/one.pid', '--detach=true',
-             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
-             '--cpuset-cpus=0,1,2,3,4,5,6,7', 'foo'],
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
             cmd
         )
 
-    @mock.patch("psutil.Process.cpu_affinity",
-                return_value=[0, 1, 2, 3, 4, 5, 6, 7])
     @mock.patch('paunch.runner.PodmanRunner', autospec=True)
-    def test_cont_run_args_validation_false(self, runner, mock_cpu):
+    def test_cont_run_args_validation_false(self, runner):
         config = {
             'one': {
                 'image': 'foo',
@@ -112,7 +105,6 @@ class TestPodmanBuilder(base.TestBaseBuilder):
         self.assertFalse(builder.container_run_args(cmd, 'one'))
         self.assertEqual(
             ['podman', '--conmon-pidfile=/var/run/one.pid', '--detach=true',
-             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
-             '--cpuset-cpus=0,1,2,3,4,5,6,7', 'foo'],
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
             cmd
         )

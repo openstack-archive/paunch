@@ -91,7 +91,10 @@ class ComposeV1Builder(base.BaseBuilder):
             if cconfig['cpuset_cpus'] != 'all':
                 cmd.append('--cpuset-cpus=%s' % cconfig['cpuset_cpus'])
         else:
-            cmd.append('--cpuset-cpus=%s' % common.get_cpus_allowed_list())
+            with open('/proc/cmdline') as cmdline:
+                if 'isolcpus' in cmdline.read():
+                    cmd.append('--cpuset-cpus=%s' %
+                               common.get_cpus_allowed_list())
 
         self.string_arg(cconfig, cmd,
                         'stop_grace_period', '--stop-timeout',

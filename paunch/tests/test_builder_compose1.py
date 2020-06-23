@@ -20,8 +20,7 @@ from paunch.tests import test_builder_base as tbb
 
 class TestComposeV1Builder(tbb.TestBaseBuilder):
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
-    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_cont_run_args(self, mock_cpu, runner):
+    def test_cont_run_args(self, runner):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -84,8 +83,7 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
         )
 
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
-    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_cont_run_args_validation_true(self, mock_cpu, runner):
+    def test_cont_run_args_validation_true(self, runner):
         config = {
             'one': {
                 'image': 'foo',
@@ -99,15 +97,12 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
         self.assertTrue(builder.container_run_args(cmd, 'one'))
         self.assertEqual(
             ['docker', '--detach=true',
-             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
-             '--cpuset-cpus=0,1,2,3',
-             'foo'],
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
             cmd
         )
 
     @mock.patch('paunch.runner.DockerRunner', autospec=True)
-    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_cont_run_args_validation_false(self, mock_cpu, runner):
+    def test_cont_run_args_validation_false(self, runner):
         config = {
             'one': {
                 'image': 'foo',
@@ -121,7 +116,6 @@ class TestComposeV1Builder(tbb.TestBaseBuilder):
         self.assertFalse(builder.container_run_args(cmd, 'one'))
         self.assertEqual(
             ['docker', '--detach=true',
-             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro',
-             '--cpuset-cpus=0,1,2,3', 'foo'],
+             '--volume=/foo:/foo:rw', '--volume=/bar:/bar:ro', 'foo'],
             cmd
         )
