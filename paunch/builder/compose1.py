@@ -235,6 +235,8 @@ class ComposeV1Builder(object):
         cmd.append(cconfig.get('image', ''))
         cmd.extend(self.command_argument(cconfig.get('command')))
 
+        return self.validate_volumes(cconfig.get('volumes', []))
+
     def docker_exec_args(self, cmd, container):
         cconfig = self.config[container]
         if 'privileged' in cconfig:
@@ -310,6 +312,28 @@ class ComposeV1Builder(object):
         if not isinstance(command, list):
             return command.split()
         return command
+
+    def validate_volumes(self, volumes):
+        """Validate volume sources
+
+        Validates that the source volume either exists on the filesystem
+        or is a valid container volume.  Since docker will error if the
+        source volume filesystem path doesn't exist, we want to catch the
+        error before docker.
+
+        :param: volumes: list of volume mounts in the format of "src:path"
+        """
+        valid = True
+        for volume in volumes:
+            if not volume:
+                # ignore when volume is ''
+                continue
+            src_path = volume.split(':', 1)[0]
+            check = self.runner.validate_volume_source(src_path)
+            if not check:
+                self.log.error("%s is not a valid volume source" % src_path)
+                valid = False
+        return valid
 
 
 class PullException(Exception):

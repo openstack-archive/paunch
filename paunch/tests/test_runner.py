@@ -284,3 +284,27 @@ four-12345678 four
             'two': [{'e': 'f'}, {'e': 'f'}, {'e': 'f'}],
             'three': [{'e': 'f'}, {'e': 'f'}, {'e': 'f'}]
         }, result)
+
+    @mock.patch('os.path.exists', return_value=True)
+    def test_validate_volume_source_file(self, exists_mock):
+        self.assertTrue(self.runner.validate_volume_source('/tmp'))
+
+    @mock.patch('os.path.exists', return_value=False)
+    def test_validate_volume_source_file_fail(self, exists_mock):
+        self.assertFalse(self.runner.validate_volume_source('/nope'))
+
+    @mock.patch('os.path.exists', return_value=False)
+    @mock.patch('subprocess.Popen')
+    def test_validate_volume_source_container(self, popen, exists_mock):
+        ps_result = '''foo
+foobar
+'''
+        self.mock_execute(popen, ps_result, '', 0)
+        self.assertTrue(self.runner.validate_volume_source('foo'))
+
+    @mock.patch('os.path.exists', return_value=False)
+    @mock.patch('subprocess.Popen')
+    def test_validate_volume_source_container_fail(self, popen, exists_mock):
+        ps_result = ''
+        self.mock_execute(popen, ps_result, '', 0)
+        self.assertFalse(self.runner.validate_volume_source('foo'))

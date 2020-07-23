@@ -477,7 +477,8 @@ three-12345678 three''', '', 0),
         )
 
     @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_docker_run_args_lists(self, mock_cpu):
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_docker_run_args_lists(self, mock_runner, mock_cpu):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -493,7 +494,8 @@ three-12345678 three''', '', 0),
                 'volumes_from': ['two', 'three']
             }
         }
-        builder = compose1.ComposeV1Builder('foo', config, None)
+        mock_runner.validate_volume_source.return_value = True
+        builder = compose1.ComposeV1Builder('foo', config, mock_runner)
 
         cmd = ['docker', 'run', '--name', 'one']
         builder.docker_run_args(cmd, 'one')
@@ -511,7 +513,8 @@ three-12345678 three''', '', 0),
         )
 
     @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
-    def test_docker_run_args_lists_with_cpu(self, mock_cpu):
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_docker_run_args_lists_with_cpu(self, mock_runner, mock_cpu):
         config = {
             'one': {
                 'image': 'centos:7',
@@ -528,7 +531,8 @@ three-12345678 three''', '', 0),
                 'cpuset_cpus': '0-2',
             }
         }
-        builder = compose1.ComposeV1Builder('foo', config, None)
+        mock_runner.validate_volume_source.return_value = True
+        builder = compose1.ComposeV1Builder('foo', config, mock_runner)
 
         cmd = ['docker', 'run', '--name', 'one']
         builder.docker_run_args(cmd, 'one')
@@ -591,4 +595,44 @@ three-12345678 three''', '', 0),
         self.assertEqual(
             ['ls', '-l', '"/foo', 'bar"'],
             b.command_argument('ls -l "/foo bar"')
+        )
+
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
+    def test_docker_run_args_validation_true(self, mock_cpu, mock_runner):
+        config = {
+            'one': {
+                'image': 'foo',
+                'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
+            }
+        }
+        mock_runner.validate_volume_source.return_value = True
+        builder = compose1.ComposeV1Builder('foo', config, mock_runner)
+
+        cmd = ['docker']
+        self.assertTrue(builder.docker_run_args(cmd, 'one'))
+        self.assertEqual(
+            ['docker', '--detach=true', '--volume=/foo:/foo:rw',
+             '--volume=/bar:/bar:ro', '--cpuset-cpus=0,1,2,3', 'foo'],
+            cmd
+        )
+
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    @mock.patch("psutil.Process.cpu_affinity", return_value=[0, 1, 2, 3])
+    def test_docker_run_args_validation_false(self, mock_cpu, mock_runner):
+        config = {
+            'one': {
+                'image': 'foo',
+                'volumes': ['/foo:/foo:rw', '/bar:/bar:ro'],
+            }
+        }
+        mock_runner.validate_volume_source.return_value = False
+        builder = compose1.ComposeV1Builder('foo', config, mock_runner)
+
+        cmd = ['docker']
+        self.assertFalse(builder.docker_run_args(cmd, 'one'))
+        self.assertEqual(
+            ['docker', '--detach=true', '--volume=/foo:/foo:rw',
+             '--volume=/bar:/bar:ro', '--cpuset-cpus=0,1,2,3', 'foo'],
+            cmd
         )
