@@ -22,16 +22,23 @@ class SystemctlException(Exception):
     pass
 
 
-def systemctl(cmd, log=None):
+class SystemctlMaskedException(Exception):
+    pass
+
+
+def systemctl(cmd, log=None, ignore_errors=False):
     log = log or common.configure_logging(__name__)
     if not isinstance(cmd, list):
         raise SystemctlException("systemctl cmd passed must be a list")
     cmd.insert(0, 'systemctl')
     log.debug("Executing: {}".format(" ".join(cmd)))
-    try:
-        subprocess.check_call(cmd)
-    except subprocess.CalledProcessError as err:
-        raise SystemctlException(str(err))
+    r = subprocess.run(cmd,
+                       stdout=subprocess.PIPE,
+                       stderr=subprocess.PIPE,
+                       universal_newlines=True)
+    if not ignore_errors and r.returncode != 0:
+        raise SystemctlException(r.stderr.rstrip())
+    return r.stdout.rstrip()
 
 
 def format_name(name):
@@ -54,6 +61,11 @@ def is_active(service, log=None):
     systemctl(['is-active', '-q', service], log)
 
 
+def is_masked(service, log=None):
+    out = systemctl(['is-enabled', service], log, ignore_errors=True)
+    return 'masked' in out
+
+
 # NOTE(bogdando): this implements a crash-loop with reset-failed
 # counters approach that provides an efficient feature parity to the
 # classic rate limiting, shall we want to implement that for the
@@ -67,6 +79,10 @@ def is_active(service, log=None):
     stop=tenacity.stop_after_attempt(5)
 )
 def enable(service, now=True, log=None):
+    if is_masked(service, log):
+        if log:
+            log.warning('Not enabling masked service %s' % service)
+        raise SystemctlMaskedException('Service %s is masked' % service)
     cmd = ['enable']
     if now:
         cmd.append('--now')
@@ -84,6 +100,10 @@ def disable(service, log=None):
 
 
 def add_requires(target, units, log=None):
+    if is_masked(target, log):
+        if log:
+            log.debug('Ignoring masked service target %s' % target)
+        raise SystemctlMaskedException('Service %s is masked' % target)
     cmd = ['add-requires', target]
     if isinstance(units, list):
         cmd.extend(units)
