@@ -40,7 +40,7 @@ class BaseRunner(object):
                              'and will be removed in Train.')
 
     @staticmethod
-    def execute(cmd, log=None, quiet=False):
+    def execute(cmd, log=None, quiet=False, warn_only=False):
         if not log:
             log = common.configure_logging(__name__)
         if not quiet:
@@ -49,8 +49,12 @@ class BaseRunner(object):
                                    stderr=subprocess.PIPE)
         cmd_stdout, cmd_stderr = subproc.communicate()
         if subproc.returncode != 0:
-            log.error('Error executing %s: returned %s' % (cmd,
-                                                           subproc.returncode))
+            if warn_only:
+                log.warning('Error executing %s: '
+                            'returned %s' % (cmd, subproc.returncode))
+            else:
+                log.error('Error executing %s: '
+                          'returned %s' % (cmd, subproc.returncode))
         if not quiet:
             log.debug(cmd_stdout)
             log.debug(cmd_stderr)
@@ -78,7 +82,8 @@ class BaseRunner(object):
             '--filter', 'label=managed_by=%s' % self.managed_by,
             '--format', fmt
         ]
-        cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
+        cmd_stdout, cmd_stderr, returncode = self.execute(
+            cmd, log=self.log, quiet=False, warn_only=True)
         results = cmd_stdout.split()
         if returncode != 0 or not results or results == ['']:
             # NOTE(bogdando): also look by the historically used to
@@ -100,7 +105,8 @@ class BaseRunner(object):
             '--filter', 'label=managed_by=%s' % self.managed_by,
             '--filter', 'label=config_id=%s' % conf_id
         ]
-        cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
+        cmd_stdout, cmd_stderr, returncode = self.execute(
+            cmd, log=self.log, quiet=False, warn_only=True)
         results = cmd_stdout.split()
         if returncode != 0 or not results or results == ['']:
             # NOTE(bogdando): also look by the historically used to
@@ -131,7 +137,7 @@ class BaseRunner(object):
             cmd.append(output_format)
         cmd.append(name)
         (cmd_stdout, cmd_stderr, returncode) = self.execute(
-            cmd, self.log, quiet)
+            cmd, self.log, quiet, True)
         if returncode != 0:
             return
         try:
@@ -172,7 +178,8 @@ class BaseRunner(object):
             '--format',
             '{{.Names}}'
         ]
-        (cmd_stdout, cmd_stderr, returncode) = self.execute(cmd, self.log)
+        (cmd_stdout, cmd_stderr, returncode) = self.execute(
+            cmd, log=self.log, quiet=False, warn_only=True)
         if returncode == 0:
             names = cmd_stdout.split()
             if names:
@@ -255,7 +262,8 @@ class BaseRunner(object):
         cmd.extend((
             '--format', '{{.Names}} %s' % fmt
         ))
-        cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
+        cmd_stdout, cmd_stderr, returncode = self.execute(
+            cmd, log=self.log, quiet=False, warn_only=True)
         results = cmd_stdout.split("\n")
         if returncode != 0 or not results or results == ['']:
             # NOTE(bogdando): also look by the historically used to
@@ -462,12 +470,12 @@ class PodmanRunner(BaseRunner):
 
     def image_exist(self, name, quiet=False):
         cmd = ['podman', 'image', 'exists', name]
-        (_, _, returncode) = self.execute(cmd, self.log, quiet)
+        (_, _, returncode) = self.execute(cmd, self.log, quiet, True)
         return returncode == 0
 
     def container_exist(self, name, quiet=False):
         cmd = ['podman', 'container', 'exists', name]
-        (_, _, returncode) = self.execute(cmd, self.log, quiet)
+        (_, _, returncode) = self.execute(cmd, self.log, quiet, True)
         return returncode == 0
 
     def container_running(self, container):
@@ -494,8 +502,8 @@ class PodmanRunner(BaseRunner):
                 # at the first retry, we will force a sync with the OCI runtime
                 if self.cont_cmd == 'podman' and count == 2:
                     chk_cmd.append('--sync')
-                (cmd_stdout, cmd_stderr, returncode) = self.execute(chk_cmd,
-                                                                    self.log)
+                (cmd_stdout, cmd_stderr, returncode) = self.execute(
+                    chk_cmd, log=self.log, quiet=False, warn_only=True)
 
                 if returncode != 0:
                     self.log.warning('Attempt %i Error when running '
