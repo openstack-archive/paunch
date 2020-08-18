@@ -118,12 +118,12 @@ three-12345678 three''', '', 0),
             # inspect existing image centos:6
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:6'], mock.ANY, False
+                 '--format', 'exists', 'centos:6'], mock.ANY, False, True
             ),
             # inspect and pull missing image centos:7
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7'], mock.ANY, False
+                 '--format', 'exists', 'centos:7'], mock.ANY, False, True
             ),
             # first pull attempt fails
             mock.call(
@@ -139,7 +139,7 @@ three-12345678 three''', '', 0),
                  '--filter', 'label=managed_by=tester',
                  '--filter', 'label=config_id=foo',
                  '--format', '{{.Names}} {{.Label "container_name"}}'],
-                mock.ANY
+                log=mock.ANY, quiet=False, warn_only=True
             ),
             mock.call(
                 ['docker', 'ps', '-a',
@@ -158,7 +158,7 @@ three-12345678 three''', '', 0),
                 ['docker', 'ps', '-a',
                  '--filter', 'label=managed_by=tester',
                  '--format', '{{.Names}} {{.Label "container_name"}}'],
-                mock.ANY
+                log=mock.ANY, quiet=False, warn_only=True
             ),
             # rename three from an ephemeral to the static name
             mock.call(['docker', 'rename', 'three-12345678', 'three'],
@@ -169,7 +169,7 @@ three-12345678 three''', '', 0),
                  '--filter', 'label=managed_by=tester',
                  '--filter', 'label=config_id=foo',
                  '--format', '{{.Names}} {{.Label "container_name"}}'],
-                mock.ANY
+                log=mock.ANY, quiet=False, warn_only=True
             ),
             # run one
             mock.call(
@@ -295,7 +295,7 @@ three-12345678 three''', '', 0),
             # inspect image centos:7
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7'], mock.ANY, False
+                 '--format', 'exists', 'centos:7'], mock.ANY, False, True
             ),
             # rm containers not in config
             mock.call(['docker', 'stop', 'five'], mock.ANY),
@@ -306,7 +306,7 @@ three-12345678 three''', '', 0),
             # check the renamed one, config hasn't changed
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',
-                       'one'], mock.ANY, False),
+                       'one'], mock.ANY, False, True),
             # don't run one, its already running
             # run two
             mock.call(
@@ -321,7 +321,7 @@ three-12345678 three''', '', 0),
             # rm three, changed config
             mock.call(['docker', 'inspect', '--type', 'container',
                        '--format', '{{index .Config.Labels "config_data"}}',
-                       'three'], mock.ANY, False),
+                       'three'], mock.ANY, False, True),
             mock.call(['docker', 'stop', 'three'], mock.ANY),
             mock.call(['docker', 'rm', 'three'], mock.ANY),
             # run three
@@ -406,12 +406,12 @@ three-12345678 three''', '', 0),
             # inspect existing image centos:6
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:6'], mock.ANY, False
+                 '--format', 'exists', 'centos:6'], mock.ANY, False, True
             ),
             # inspect and pull missing image centos:7
             mock.call(
                 ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7'], mock.ANY, False
+                 '--format', 'exists', 'centos:7'], mock.ANY, False, True
             ),
             mock.call(
                 ['docker', 'pull', 'centos:7'], mock.ANY
