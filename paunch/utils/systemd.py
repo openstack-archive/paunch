@@ -110,7 +110,7 @@ PIDFile=/var/run/%(name)s.pid
 WantedBy=multi-user.target""" % s_config)
     try:
         systemctl.daemon_reload()
-        systemctl.enable(service, now=True)
+        systemctl.enable(service, now=True, log=log)
     except systemctl.SystemctlException:
         log.exception("systemctl failed")
         raise
@@ -244,9 +244,9 @@ RandomizedDelaySec=%(randomize)s
 [Install]
 WantedBy=timers.target""" % s_config)
     try:
-        systemctl.enable(healthcheck_timer, now=True)
+        systemctl.enable(healthcheck_timer, now=True, log=log)
         systemctl.add_requires(systemctl.format_name(service),
-                               healthcheck_timer)
+                               healthcheck_timer, log=log)
         systemctl.daemon_reload()
     except systemctl.SystemctlException:
         log.exception("systemctl failed")

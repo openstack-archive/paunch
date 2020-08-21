@@ -23,12 +23,20 @@ from paunch.utils import systemd
 
 class TestUtilsSystemd(base.TestCase):
 
+    def setUp(self):
+        super(TestUtilsSystemd, self).setUp()
+        self.r = mock.MagicMock()
+        self.r.returncode = 0
+        self.r.stdout = ''
+        self.r.stderr = ''
+
     @mock.patch('shutil.rmtree', autospec=True)
     @mock.patch('os.path.exists', autospec=True)
-    @mock.patch('subprocess.check_call', autospec=True)
+    @mock.patch('subprocess.run', autospec=True)
     @mock.patch('os.chmod')
-    def test_service_create(self, mock_chmod, mock_subprocess_check_call,
+    def test_service_create(self, mock_chmod, mock_subprocess_run,
                             mock_exists, mock_rmtree):
+        mock_subprocess_run.return_value = self.r
         container = 'my_app'
         service = 'tripleo_' + container
         cconfig = {'depends_on': ['something'], 'restart': 'unless-stopped',
@@ -45,9 +53,13 @@ class TestUtilsSystemd(base.TestCase):
         self.assertIn('PIDFile=/var/run/my_app.pid', unit)
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
 
-        mock_subprocess_check_call.assert_has_calls([
-            mock.call(['systemctl', 'daemon-reload']),
-            mock.call(['systemctl', 'enable', '--now', service]),
+        mock_subprocess_run.assert_has_calls([
+            mock.call(['systemctl', 'daemon-reload'],
+                      stderr=-1, stdout=-1, universal_newlines=True),
+            mock.call(['systemctl', 'is-enabled', service],
+                      stderr=-1, stdout=-1, universal_newlines=True),
+            mock.call(['systemctl', 'enable', '--now', service],
+                      stderr=-1, stdout=-1, universal_newlines=True),
         ])
 
         mock_rmtree.assert_has_calls([
@@ -56,9 +68,10 @@ class TestUtilsSystemd(base.TestCase):
 
         os.rmdir(tempdir)
 
-    @mock.patch('subprocess.check_call', autospec=True)
+    @mock.patch('subprocess.run', autospec=True)
     @mock.patch('os.chmod')
-    def test_svc_extended_create(self, mock_chmod, mock_subprocess_check_call):
+    def test_svc_extended_create(self, mock_chmod, mock_subprocess_run):
+        mock_subprocess_run.return_value = self.r
         container = 'my_app'
         service = 'tripleo_' + container
         cconfig = {'depends_on': ['something'], 'restart': 'unless-stopped',
@@ -82,9 +95,10 @@ class TestUtilsSystemd(base.TestCase):
     @mock.patch('os.remove', autospec=True)
     @mock.patch('os.path.exists', autospec=True)
     @mock.patch('os.path.isfile', autospec=True)
-    @mock.patch('subprocess.check_call', autospec=True)
-    def test_service_delete(self, mock_subprocess_check_call, mock_isfile,
+    @mock.patch('subprocess.run', autospec=True)
+    def test_service_delete(self, mock_subprocess_run, mock_isfile,
                             mock_exists, mock_rm, mock_rmtree):
+        mock_subprocess_run.return_value = self.r
         mock_isfile.return_value = True
         container = 'my_app'
         service = 'tripleo_' + container
@@ -97,15 +111,21 @@ class TestUtilsSystemd(base.TestCase):
             mock.call(tempdir + service + '_healthcheck.service'),
             mock.call(tempdir + service + '_healthcheck.timer'),
         ])
-        mock_subprocess_check_call.assert_has_calls([
-            mock.call(['systemctl', 'stop', service + '.service']),
-            mock.call(['systemctl', 'disable', service + '.service']),
-            mock.call(['systemctl', 'stop', service + '_healthcheck.service']),
+        mock_subprocess_run.assert_has_calls([
+            mock.call(['systemctl', 'stop', service + '.service'],
+                      stderr=-1, stdout=-1, universal_newlines=True),
+            mock.call(['systemctl', 'disable', service + '.service'],
+                      stderr=-1, stdout=-1, universal_newlines=True),
+            mock.call(['systemctl', 'stop', service + '_healthcheck.service'],
+                      stderr=-1, stdout=-1, universal_newlines=True),
             mock.call(['systemctl', 'disable', service +
-                       '_healthcheck.service']),
-            mock.call(['systemctl', 'stop', service + '_healthcheck.timer']),
+                       '_healthcheck.service'],
+                      stderr=-1, stdout=-1, universal_newlines=True),
+            mock.call(['systemctl', 'stop', service + '_healthcheck.timer'],
+                      stderr=-1, stdout=-1, universal_newlines=True),
             mock.call(['systemctl', 'disable', service +
-                       '_healthcheck.timer']),
+                       '_healthcheck.timer'],
+                      stderr=-1, stdout=-1, universal_newlines=True),
         ])
         mock_rmtree.assert_has_calls([
             mock.call(os.path.join(tempdir, service_requires_d)),
@@ -141,10 +161,11 @@ class TestUtilsSystemd(base.TestCase):
         self.assertIn('ExecStart=/usr/bin/podman exec --user root my_app '
                       '/foo/bar baz', unit)
 
-    @mock.patch('subprocess.check_call', autospec=True)
+    @mock.patch('subprocess.run', autospec=True)
     @mock.patch('os.chmod')
     def test_healthcheck_timer_create(self, mock_chmod,
-                                      mock_subprocess_check_call):
+                                      mock_subprocess_run):
+        mock_subprocess_run.return_value = self.r
         container = 'my_app'
         service = 'tripleo_' + container
         cconfig = {'check_interval': '15'}
@@ -159,9 +180,16 @@ class TestUtilsSystemd(base.TestCase):
         self.assertIn('OnActiveSec=120', unit)
         self.assertIn('OnUnitActiveSec=15', unit)
         mock_chmod.assert_has_calls([mock.call(sysd_unit_f, 420)])
-        mock_subprocess_check_call.assert_has_calls([
-            mock.call(['systemctl', 'enable', '--now', healthcheck_timer]),
+        mock_subprocess_run.assert_has_calls([
+            mock.call(['systemctl', 'is-enabled', healthcheck_timer],
+                      stderr=-1, stdout=-1, universal_newlines=True),
+            mock.call(['systemctl', 'enable', '--now', healthcheck_timer],
+                      stderr=-1, stdout=-1, universal_newlines=True),
+            mock.call(['systemctl', 'is-enabled', service + '.service'],
+                      stderr=-1, stdout=-1, universal_newlines=True),
             mock.call(['systemctl', 'add-requires', service + '.service',
-                      healthcheck_timer]),
-            mock.call(['systemctl', 'daemon-reload']),
+                      healthcheck_timer],
+                      stderr=-1, stdout=-1, universal_newlines=True),
+            mock.call(['systemctl', 'daemon-reload'],
+                      stderr=-1, stdout=-1, universal_newlines=True),
         ])

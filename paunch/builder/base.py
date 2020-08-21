@@ -21,6 +21,7 @@ import tenacity
 import yaml
 
 from paunch.utils import common
+from paunch.utils import systemctl
 from paunch.utils import systemd
 
 
@@ -164,18 +165,25 @@ class BaseBuilder(object):
                 self.log.info("stdout: %s" % cmd_stdout)
                 self.log.info("stderr: %s" % cmd_stderr)
                 if systemd_managed:
-                    systemd.service_create(container=container_name,
-                                           cconfig=cconfig,
-                                           log=self.log)
-                    if (not self.healthcheck_disabled and
-                            'healthcheck' in cconfig):
-                        check = cconfig.get('healthcheck')['test']
-                        systemd.healthcheck_create(container=container_name,
-                                                   log=self.log, test=check)
-                        systemd.healthcheck_timer_create(
-                            container=container_name,
-                            cconfig=cconfig,
-                            log=self.log)
+                    try:
+                        systemd.service_create(container=container_name,
+                                               cconfig=cconfig,
+                                               log=self.log)
+                        if (not self.healthcheck_disabled and
+                                'healthcheck' in cconfig):
+                            check = cconfig.get('healthcheck')['test']
+                            systemd.healthcheck_create(
+                                container=container_name,
+                                log=self.log,
+                                test=check)
+                            systemd.healthcheck_timer_create(
+                                container=container_name,
+                                cconfig=cconfig,
+                                log=self.log)
+                    except systemctl.SystemctlMaskedException:
+                        self.log.warning('Masked service for container %s is '
+                                         'not managed here' % container_name)
+                        pass
 
         if failed_containers:
             message = (
