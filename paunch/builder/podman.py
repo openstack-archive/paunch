@@ -67,6 +67,7 @@ class PodmanBuilder(base.BaseBuilder):
         self.string_arg(cconfig, cmd, 'ipc', '--ipc')
         self.string_arg(cconfig, cmd, 'pid', '--pid')
         self.string_arg(cconfig, cmd, 'uts', '--uts')
+        self.string_arg(cconfig, cmd, 'pids_limit', '--pids-limit')
         # TODO(sbaker): implement ulimits property, deprecate this ulimit
         # property
         for u in cconfig.get('ulimit', []):
