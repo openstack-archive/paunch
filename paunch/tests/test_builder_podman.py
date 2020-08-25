@@ -41,6 +41,7 @@ class TestPodmanBuilder(base.TestBaseBuilder):
                 'cap_add': ['SYS_ADMIN', 'SETUID'],
                 'cap_drop': ['NET_RAW'],
                 'hostname': 'foohostname',
+                'pids_limit': '1024',
                 'extra_hosts': [
                     'foohost:127.0.0.1',
                     'barhost:127.0.0.2'
@@ -56,7 +57,8 @@ class TestPodmanBuilder(base.TestBaseBuilder):
              '--conmon-pidfile=/var/run/one.pid',
              '--detach=true', '--env-file=/tmp/foo.env',
              '--net=host', '--ipc=host', '--pid=container:bar',
-             '--uts=host', '--privileged=true', '--user=bar',
+             '--uts=host', '--pids-limit=1024',
+             '--privileged=true', '--user=bar',
              '--log-opt=tag={{.ImageName}}/{{.Name}}/{{.ID}}',
              '--cpu-shares=600',
              '--memory=1G',
