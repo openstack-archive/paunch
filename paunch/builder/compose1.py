@@ -94,24 +94,40 @@ class ComposeV1Builder(object):
                 self.runner.remove_container(container)
                 continue
 
-            ex_data_str = self.runner.inspect(
-                container, '{{index .Config.Labels "config_data"}}')
-            if not ex_data_str:
-                LOG.debug("Deleting container (no config_data): %s"
-                          % container)
+            inspect_info = self.runner.inspect(container)
+            if not inspect_info:
+                # we shouldn't get here but you never know
+                LOG.debug("Deleting container (no inspect data): "
+                          "%s" % container)
                 self.runner.remove_container(container)
                 continue
+            container_config = inspect_info.get('Config', {})
+            config_data = container_config.get('Labels', {}).get('config_data')
 
             try:
-                ex_data = yaml.safe_load(str(ex_data_str))
+                ex_data = yaml.safe_load(str(config_data))
             except Exception:
                 ex_data = None
 
+            # check if config_data has changed
             new_data = self.config.get(cn[-1])
             if new_data != ex_data:
                 LOG.debug("Deleting container (changed config_data): %s"
                           % container)
                 self.runner.remove_container(container)
+                continue
+
+            # check if the container image has changed (but tag as not)
+            # e.g. if you use :latest, the name doesn't change but the ID does
+            container_image = container_config.get('Image')
+
+            if container_image:
+                image_id_str = self.runner.inspect(
+                    container_image, "{{index .Id}}", type='image')
+                if str(image_id_str).strip() != inspect_info.get('Image'):
+                    LOG.debug("Deleting container (image updated): "
+                              "%s" % container)
+                    self.runner.remove_container(container)
 
         # deleting containers is an opportunity for renames to their
         # preferred name

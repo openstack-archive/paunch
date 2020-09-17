@@ -238,11 +238,15 @@ three-12345678 three''', '', 0),
             # rm six
             ('', '', 0),
             # inspect two
-            ('{"start_order": 1, "image": "centos:6"}', '', 0),
+            ('[{"Config": {"Labels": {"config_data": '
+             '"{\\\"start_order\\\": 1, \\\"image\\\": \\\"centos:6\\\"}"'
+             '}}}]', '', 0),
             # rm two, changed config data
             ('', '', 0),
             # inspect three
-            ('{"start_order": 2, "image": "centos:7"}', '', 0),
+            ('[{"Config": {"Labels": {"config_data": '
+             '"{\\\"start_order\\\": 2, \\\"image\\\": \\\"centos:7\\\"}"'
+             '}}}]', '', 0),
             # ps for after delete_missing_and_updated renames
             ('', '', 0),
             # ps2 for after delete_missing_and_updated renames
@@ -287,12 +291,10 @@ three-12345678 three''', '', 0),
             mock.call(['docker', 'rm', 'six']),
             # rm two, changed config
             mock.call(['docker', 'inspect', '--type', 'container',
-                       '--format', '{{index .Config.Labels "config_data"}}',
                        'two-12345678']),
             mock.call(['docker', 'rm', 'two-12345678']),
             # check three, config hasn't changed
             mock.call(['docker', 'inspect', '--type', 'container',
-                       '--format', '{{index .Config.Labels "config_data"}}',
                        'three-12345678']),
             # ps for after delete_missing_and_updated renames
             mock.call(
@@ -602,3 +604,239 @@ three-12345678 three''', '', 0),
             ['ls', '-l', '"/foo', 'bar"'],
             b.command_argument('ls -l "/foo bar"')
         )
+
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_delete_updated_no_change(self, runner):
+        mock_names = mock.MagicMock()
+        mock_names.return_value = [['one']]
+        runner.container_names = mock_names
+        mock_inspect = mock.MagicMock()
+        mock_inspect.side_effect = [
+            {
+                "Id": ("d038dccebdb0996ed36ab4ff06e7c424b3816d67664aa11e00642"
+                       "be5e00cec55"),
+                "Config": {
+                    "Labels": {
+                        "config_data": """{
+                            \"start_order\": 0,
+                            \"image": \"centos:7\"
+                        }"""
+                    },
+                    "Image": "127.0.0.1:8787/centos:7"
+                },
+                "Image": "sha256:1"
+            },
+            "sha256:1"
+        ]
+        runner.inspect = mock_inspect
+        mock_remove = mock.MagicMock()
+        runner.remove_container = mock_remove
+        mock_rename = mock.MagicMock()
+        runner.rename_containers = mock_rename
+
+        config = {
+            'one': {
+                'start_order': 0,
+                'image': 'centos:7',
+            }
+        }
+
+        self.builder = compose1.ComposeV1Builder(
+            'one', config, runner.return_value)
+
+        self.builder.runner = runner
+        self.builder.delete_missing_and_updated()
+        mock_names.assert_called_once_with('one')
+
+        calls = [
+            mock.call('one'),
+            mock.call('127.0.0.1:8787/centos:7',
+                      '{{index .Id}}',
+                      type='image')
+        ]
+        mock_inspect.has_calls(calls)
+        mock_remove.assert_not_called()
+        mock_rename.assert_called_once_with()
+
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_delete_updated_inspect_empty(self, runner):
+        mock_names = mock.MagicMock()
+        mock_names.return_value = [['one']]
+        runner.container_names = mock_names
+        mock_inspect = mock.MagicMock()
+        mock_inspect.return_value = None
+
+        runner.inspect = mock_inspect
+        mock_remove = mock.MagicMock()
+        runner.remove_container = mock_remove
+        mock_rename = mock.MagicMock()
+        runner.rename_containers = mock_rename
+
+        config = {
+            'one': {
+                'start_order': 0,
+                'image': 'centos:7',
+            }
+        }
+
+        self.builder = compose1.ComposeV1Builder(
+            'one', config, runner.return_value)
+
+        self.builder.runner = runner
+        self.builder.delete_missing_and_updated()
+        mock_names.assert_called_once_with('one')
+
+        calls = [
+            mock.call('one'),
+        ]
+        mock_inspect.has_calls(calls)
+        mock_remove.assert_called_once_with('one')
+        mock_rename.assert_called_once_with()
+
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_delete_updated_no_config_data(self, runner):
+        mock_names = mock.MagicMock()
+        mock_names.return_value = [['one']]
+        runner.container_names = mock_names
+        mock_inspect = mock.MagicMock()
+        mock_inspect.side_effect = [
+            {
+                "Id": ("d038dccebdb0996ed36ab4ff06e7c424b3816d67664aa11e00642"
+                       "be5e00cec55"),
+                "Config": {
+                    "Labels": {},
+                    "Image": "127.0.0.1:8787/centos:7"
+                },
+                "Image": "sha256:1"
+            },
+            "sha256:1"
+        ]
+        runner.inspect = mock_inspect
+        mock_remove = mock.MagicMock()
+        runner.remove_container = mock_remove
+        mock_rename = mock.MagicMock()
+        runner.rename_containers = mock_rename
+
+        config = {
+            'one': {
+                'start_order': 0,
+                'image': 'centos:7',
+            }
+        }
+
+        self.builder = compose1.ComposeV1Builder(
+            'one', config, runner.return_value)
+
+        self.builder.runner = runner
+        self.builder.delete_missing_and_updated()
+        mock_names.assert_called_once_with('one')
+
+        calls = [
+            mock.call('one'),
+        ]
+        mock_inspect.has_calls(calls)
+        mock_remove.assert_called_once_with('one')
+        mock_rename.assert_called_once_with()
+
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_delete_updated_update_config(self, runner):
+        mock_names = mock.MagicMock()
+        mock_names.return_value = [['one']]
+        runner.container_names = mock_names
+        mock_inspect = mock.MagicMock()
+        mock_inspect.side_effect = [
+            {
+                "Id": ("d038dccebdb0996ed36ab4ff06e7c424b3816d67664aa11e00642"
+                       "be5e00cec55"),
+                "Config": {
+                    "Labels": {
+                        "config_data": """{
+                            \"start_order\": 1,
+                            \"image": \"centos:7\"
+                        }"""
+                    },
+                    "Image": "127.0.0.1:8787/centos:7"
+                },
+                "Image": "sha256:1"
+            },
+            "sha256:1"
+        ]
+        runner.inspect = mock_inspect
+        mock_remove = mock.MagicMock()
+        runner.remove_container = mock_remove
+        mock_rename = mock.MagicMock()
+        runner.rename_containers = mock_rename
+
+        config = {
+            'one': {
+                'start_order': 0,
+                'image': 'centos:7',
+            }
+        }
+
+        self.builder = compose1.ComposeV1Builder(
+            'one', config, runner.return_value)
+
+        self.builder.runner = runner
+        self.builder.delete_missing_and_updated()
+        mock_names.assert_called_once_with('one')
+
+        calls = [
+            mock.call('one'),
+        ]
+        mock_inspect.has_calls(calls)
+        mock_remove.assert_called_once_with('one')
+        mock_rename.assert_called_once_with()
+
+    @mock.patch('paunch.runner.DockerRunner', autospec=True)
+    def test_delete_updated_update_image(self, runner):
+        mock_names = mock.MagicMock()
+        mock_names.return_value = [['one']]
+        runner.container_names = mock_names
+        mock_inspect = mock.MagicMock()
+        mock_inspect.side_effect = [
+            {
+                "Id": ("d038dccebdb0996ed36ab4ff06e7c424b3816d67664aa11e00642"
+                       "be5e00cec55"),
+                "Config": {
+                    "Labels": {
+                        "config_data": """{
+                            \"start_order\": 0,
+                            \"image": \"centos:7\"
+                        }"""
+                    },
+                    "Image": "127.0.0.1:8787/centos:7"
+                },
+                "Image": "sha256:1"
+            },
+            "sha256:2"
+        ]
+        runner.inspect = mock_inspect
+        mock_remove = mock.MagicMock()
+        runner.remove_container = mock_remove
+        mock_rename = mock.MagicMock()
+        runner.rename_containers = mock_rename
+
+        config = {
+            'one': {
+                'start_order': 0,
+                'image': 'centos:7',
+            }
+        }
+
+        self.builder = compose1.ComposeV1Builder(
+            'one', config, runner.return_value)
+
+        self.builder.runner = runner
+        self.builder.delete_missing_and_updated()
+        mock_names.assert_called_once_with('one')
+
+        calls = [
+            mock.call('one'),
+            mock.call('127.0.0.1:8787/centos:7',
+                      '{{index .Id}}',
+                      type='image')
+        ]
+        mock_inspect.has_calls(calls)
+        mock_remove.assert_called_once_with('one')
+        mock_rename.assert_called_once_with()
