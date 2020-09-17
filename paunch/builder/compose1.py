@@ -120,25 +120,48 @@ class ComposeV1Builder(object):
            list(itertools.chain.from_iterable(container_names))):
             return False
 
-        ex_data_str = self.runner.inspect(
-            container, '{{index .Config.Labels "config_data"}}')
-        if not ex_data_str:
+        # fetch container inspect info
+        inspect_info = self.runner.inspect(container)
+        if not inspect_info:
+            # we shouldn't get here but you never know
+            self.log.debug("Deleting container (no inspect data): "
+                           "%s" % container)
+            self.runner.remove_container(container)
+            return True
+        container_config = inspect_info.get('Config', {})
+        config_data = container_config.get('Labels', {}).get('config_data')
+        try:
+            ex_data = yaml.safe_load(str(config_data))
+        except Exception:
+            ex_data = None
+
+        if not ex_data:
             self.log.debug("Deleting container (no_config_data): "
                            "%s" % container)
             self.runner.remove_container(container)
             return True
 
-        try:
-            ex_data = yaml.safe_load(str(ex_data_str))
-        except Exception:
-            ex_data = None
-
+        # check if config_data has changed
         new_data = self.config[container]
         if new_data != ex_data:
             self.log.debug("Deleting container (changed config_data): %s"
                            % container)
             self.runner.remove_container(container)
             return True
+
+        # check if the container image has changed (but tag as not)
+        # e.g. if you use :latest, the name doesn't change but the ID does
+        container_image = container_config.get('Image')
+
+        if container_image:
+            image_id_str = self.runner.inspect(
+                container_image, "{{index .Id}}", type='image')
+            if str(image_id_str).strip() != inspect_info.get('Image'):
+                self.log.debug("Deleting container (image updated): "
+                               "%s" % container)
+                self.runner.remove_container(container)
+                return True
+
         return False
 
     def label_arguments(self, cmd, container):
