@@ -58,8 +58,7 @@ class TestComposeV1Builder(base.TestCase):
         r = runner.DockerRunner(managed_by='tester', docker_cmd='docker')
         exe = mock.Mock()
         exe.side_effect = [
-            ('exists', '', 0),  # inspect for image centos:6
-            ('', '', 1),  # inspect for missing image centos:7
+            ('Pulled centos:6', '', 0),  # inspect for image centos:6
             ('Pulled centos:7', 'ouch', 1),  # pull centos:6 fails
             ('Pulled centos:7', '', 0),  # pull centos:6 succeeds
             # container_names for delete_missing
@@ -94,6 +93,7 @@ three-12345678 three''', '', 0),
         stdout, stderr, deploy_status_code = builder.apply()
         self.assertEqual(0, deploy_status_code)
         self.assertEqual([
+            'Pulled centos:6',
             'Pulled centos:7',
             'Created one-12345678',
             'Created two-12345678',
@@ -103,15 +103,9 @@ three-12345678 three''', '', 0),
         self.assertEqual([], stderr)
 
         exe.assert_has_calls([
-            # inspect existing image centos:6
+            # Pull image centos:6
             mock.call(
-                ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:6'], mock.ANY
-            ),
-            # inspect and pull missing image centos:7
-            mock.call(
-                ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7'], mock.ANY
+                ['docker', 'pull', 'centos:6'], mock.ANY
             ),
             # first pull attempt fails
             mock.call(
@@ -236,7 +230,7 @@ three-12345678 three''', '', 0),
         exe = mock.Mock()
         exe.side_effect = [
             # inspect for image centos:7
-            ('exists', '', 0),
+            ('Pulled centos:7', '', 0),
             # stop five
             ('', '', 0),
             # rm five
@@ -267,6 +261,7 @@ three-12345678 three''', '', 0),
         stdout, stderr, deploy_status_code = builder.apply()
         self.assertEqual(0, deploy_status_code)
         self.assertEqual([
+            'Pulled centos:7',
             'Created two-12345678',
             'Created three-12345678',
             'Created four-12345678',
@@ -275,10 +270,9 @@ three-12345678 three''', '', 0),
         self.assertEqual([], stderr)
 
         exe.assert_has_calls([
-            # inspect image centos:7
+            # pull image centos:7
             mock.call(
-                ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7'], mock.ANY
+                ['docker', 'pull', 'centos:7'], mock.ANY
             ),
             # rm containers not in config
             mock.call(['docker', 'stop', 'five'], mock.ANY),
@@ -363,8 +357,7 @@ three-12345678 three''', '', 0),
         r = runner.DockerRunner(managed_by='tester', docker_cmd='docker')
         exe = mock.Mock()
         exe.side_effect = [
-            ('exists', '', 0),  # inspect for image centos:6
-            ('', '', 1),  # inspect for missing image centos:7
+            ('Pulled centos:6', '', 0),  # inspect for image centos:6
             ('Pulling centos:7', 'ouch', 1),  # pull centos:7 failure
             ('Pulling centos:7', 'ouch', 1),  # pull centos:7 retry 2
             ('Pulling centos:7', 'ouch', 1),  # pull centos:7 retry 3
@@ -380,19 +373,12 @@ three-12345678 three''', '', 0),
 
         stdout, stderr, deploy_status_code = builder.apply()
         self.assertEqual(1, deploy_status_code)
-        self.assertEqual(['Pulling centos:7'], stdout)
+        self.assertEqual(['Pulled centos:6', 'Pulling centos:7'], stdout)
         self.assertEqual(['ouch'], stderr)
 
         exe.assert_has_calls([
-            # inspect existing image centos:6
             mock.call(
-                ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:6'], mock.ANY
-            ),
-            # inspect and pull missing image centos:7
-            mock.call(
-                ['docker', 'inspect', '--type', 'image',
-                 '--format', 'exists', 'centos:7'], mock.ANY
+                ['docker', 'pull', 'centos:6'], mock.ANY
             ),
             mock.call(
                 ['docker', 'pull', 'centos:7'], mock.ANY

@@ -290,10 +290,6 @@ class ComposeV1Builder(object):
 
         for image in sorted(images):
 
-            # only pull if the image does not exist locally
-            if self.runner.inspect(image, format='exists', type='image'):
-                continue
-
             try:
                 (cmd_stdout, cmd_stderr) = self._pull(image)
             except PullException as e:
