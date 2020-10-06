@@ -102,6 +102,7 @@ ExecStart=%(start_cmd)s
 ExecReload=/usr/bin/podman kill --signal HUP %(name)s
 ExecStop=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
 ExecStopPost=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
+SuccessExitStatus=137 143
 KillMode=none
 Type=forking
 PIDFile=/var/run/%(name)s.pid
