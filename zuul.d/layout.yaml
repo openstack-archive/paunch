@@ -1,6 +1,6 @@
 - project:
     templates:
-      - tripleo-multinode-container-minimal
+      - tripleo-multinode-container-minimal-pipeline
       - openstack-python3-train-jobs
       - check-requirements
       - publish-openstack-docs-pti
