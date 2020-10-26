@@ -12,32 +12,45 @@
         - openstack-tox-py27
         - openstack-tox-py36
         - openstack-tox-py37
-        - tripleo-ci-centos-7-containers-multinode:
+        - tripleo-ci-centos-7-content-provider:
             dependencies: &deps_unit_lint
               - openstack-tox-pep8
               - openstack-tox-py27
               - openstack-tox-py36
               - openstack-tox-py37
+        - tripleo-ci-centos-7-containers-multinode:
+            vars: &consumer_vars
+              consumer_job: true
+              build_container_images: false
+              remove_tags:
+                - build
+            dependencies: &deps_cprovider
+              - tripleo-ci-centos-7-content-provider
         - tripleo-ci-centos-7-scenario000-multinode-oooq-container-upgrades:
             dependencies: *deps_unit_lint
         - tripleo-ci-centos-7-scenario000-multinode-oooq-container-updates:
             dependencies: *deps_unit_lint
         - tripleo-ci-centos-7-scenario007-multinode-oooq-container:
-            dependencies: *deps_unit_lint
+            vars: *consumer_vars
+            dependencies: *deps_cprovider
         - tripleo-ci-centos-7-scenario009-multinode-oooq-container:
-            dependencies: *deps_unit_lint
-        - tripleo-ci-centos-7-standalone-upgrade:
-            dependencies: *deps_unit_lint
+            vars: *consumer_vars
+            dependencies: *deps_cprovider
         - tripleo-ci-centos-7-scenario001-standalone:
-            dependencies: *deps_unit_lint
+            vars: *consumer_vars
+            dependencies: *deps_cprovider
         - tripleo-ci-centos-7-scenario002-standalone:
-            dependencies: *deps_unit_lint
+            vars: *consumer_vars
+            dependencies: *deps_cprovider
         - tripleo-ci-centos-7-scenario003-standalone:
-            dependencies: *deps_unit_lint
+            vars: *consumer_vars
+            dependencies: *deps_cprovider
         - tripleo-ci-centos-7-scenario004-standalone:
-            dependencies: *deps_unit_lint
+            vars: *consumer_vars
+            dependencies: *deps_cprovider
         - tripleo-ci-centos-7-scenario012-standalone:
-            dependencies: *deps_unit_lint
+            vars: *consumer_vars
+            dependencies: *deps_cprovider
 
 # TODO, add tripleo-ci-centos-8-containerized-undercloud-upgrades to check and gate
 # to replace tripleo-ci-centos-7-containerized-undercloud-upgrades
