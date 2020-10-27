@@ -1,6 +1,6 @@
 - project:
     templates:
-      - tripleo-multinode-container-minimal
+      - tripleo-multinode-container-minimal-pipeline
       - check-requirements
       - publish-openstack-sphinx-docs
       - openstack-python-jobs
