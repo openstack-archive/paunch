@@ -652,7 +652,7 @@ three-12345678 three''', '', 0),
         calls = [
             mock.call('one'),
             mock.call('127.0.0.1:8787/centos:7',
-                      '{{index .Id}}',
+                      '{{.Id}}',
                       o_type='image')
         ]
         mock_inspect.has_calls(calls)
@@ -795,7 +795,7 @@ three-12345678 three''', '', 0),
         calls = [
             mock.call('one'),
             mock.call('127.0.0.1:8787/centos:7',
-                      '{{index .Id}}',
+                      '{{.Id}}',
                       o_type='image')
         ]
         mock_inspect.has_calls(calls)
