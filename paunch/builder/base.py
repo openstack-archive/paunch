@@ -259,7 +259,7 @@ class BaseBuilder(object):
 
         if container_image:
             image_id_str = self.runner.inspect(
-                container_image, "{{index .Id}}", o_type='image')
+                container_image, "{{.Id}}", o_type='image')
             if str(image_id_str).strip() != inspect_info.get('Image'):
                 self.log.debug("Deleting container (image updated): "
                                "%s" % container)
