@@ -31,7 +31,8 @@ class TestPaunch(base.TestCase):
             config={'bar': 'baz'},
             runner=runner.return_value,
             labels=None,
-            log=mock.ANY
+            log=mock.ANY,
+            cleanup=True
         )
         builder.return_value.apply.assert_called_once_with()
 
@@ -51,7 +52,8 @@ class TestPaunch(base.TestCase):
             config={'bar': 'baz'},
             runner=runner.return_value,
             labels={'bink': 'boop'},
-            log=mock.ANY
+            log=mock.ANY,
+            cleanup=True
         )
         builder.return_value.apply.assert_called_once_with()
 

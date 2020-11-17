@@ -21,13 +21,15 @@ from paunch.utils import common
 
 class ComposeV1Builder(object):
 
-    def __init__(self, config_id, config, runner, labels=None, log=None):
+    def __init__(self, config_id, config, runner, labels=None, log=None,
+                 cleanup=True):
         self.config_id = config_id
         self.config = config
         self.labels = labels
         self.runner = runner
         # Leverage pre-configured logger
         self.log = log or common.configure_logging(__name__)
+        self.cleanup = cleanup
 
     def apply(self):
 
@@ -108,10 +110,15 @@ class ComposeV1Builder(object):
             container = cn[0]
             # if the desired name is not in the config, delete it
             if cn[-1] not in self.config:
-                self.log.debug("Deleting container (removed): "
-                               "%s" % container)
-                self.runner.remove_container(container)
-                deleted = True
+                if self.cleanup:
+                    self.log.debug("Deleting container (removed): "
+                                   "%s" % container)
+                    self.runner.remove_container(container)
+                    deleted = True
+                else:
+                    self.log.debug("Skipping container (cleanup disabled): "
+                                   "%s" % container)
+                continue
         return deleted
 
     def delete_updated(self, container, container_names):

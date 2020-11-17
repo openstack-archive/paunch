@@ -59,6 +59,13 @@ class Apply(command.Command):
             required=True,
             help=('ID to assign to containers'),
         )
+        parser.add_argument(
+            '--no-cleanup',
+            dest='cleanup',
+            action='store_false',
+            default=True,
+            help=('Whether or not we delete containers missing in the config')
+        )
         return parser
 
     def take_action(self, parsed_args):
@@ -83,7 +90,8 @@ class Apply(command.Command):
             managed_by='paunch',
             labels=labels,
             log_level=log_level,
-            log_file=log_file
+            log_file=log_file,
+            cleanup=parsed_args.cleanup
         )
 
         return rc

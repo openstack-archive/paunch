@@ -24,7 +24,7 @@ __version__ = pbr.version.VersionInfo('paunch').version_string()
 
 
 def apply(config_id, config, managed_by, labels=None, docker_cmd=None,
-          log_level=None, log_file=None):
+          log_level=None, log_file=None, cleanup=True):
     """Execute supplied container configuration.
 
     :param str config_id: Unique config ID, should not be re-used until any
@@ -39,6 +39,8 @@ def apply(config_id, config, managed_by, labels=None, docker_cmd=None,
     :param str docker_cmd: Optional override to the docker command to run.
     :param int log_level: optional log level for loggers
     :param int log_file: optional log file for messages
+    :param bool cleanup: optional boolean to delete containers missing in the
+                         config.
 
     :returns (list, list, int) lists of stdout and stderr for each execution,
                                and a single return code representing the
@@ -53,7 +55,8 @@ def apply(config_id, config, managed_by, labels=None, docker_cmd=None,
         config=config,
         runner=r,
         labels=labels,
-        log=log
+        log=log,
+        cleanup=cleanup
     )
     return builder.apply()
 
