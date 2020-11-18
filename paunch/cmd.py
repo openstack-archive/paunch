@@ -80,9 +80,9 @@ class Apply(command.Command):
             help=('Whether or not we disable the containers healthchecks')
         )
         parser.add_argument(
-            '--cleanup',
+            '--no-cleanup',
             dest='cleanup',
-            action='store_true',
+            action='store_false',
             default=True,
             help=('Whether or not we delete containers missing in the config')
         )
