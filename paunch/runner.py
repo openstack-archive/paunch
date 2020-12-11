@@ -294,8 +294,6 @@ class BaseRunner(object):
             self.remove_container(container)
 
     def remove_container(self, container):
-        if self.cont_cmd == 'podman':
-            systemd.service_delete(container=container, log=self.log)
         self.execute([self.cont_cmd, 'stop', container], self.log)
         cmd = [self.cont_cmd, 'rm', container]
         cmd_stdout, cmd_stderr, returncode = self.execute(cmd, self.log)
@@ -308,6 +306,7 @@ class BaseRunner(object):
             if returncode != 0:
                 self.log.error('Error removing container: %s' % container)
                 self.log.error(cmd_stderr)
+                raise Exception('Unable to remove container: %s' % container)
 
     def stop_container(self, container, cont_cmd=None, quiet=False):
         cont_cmd = cont_cmd or self.cont_cmd
@@ -316,6 +315,7 @@ class BaseRunner(object):
         if returncode != 0 and not quiet:
             self.log.error('Error stopping container: %s' % container)
             self.log.error(cmd_stderr)
+            raise Exception('Unable to stop container: %s' % container)
 
     def rename_containers(self):
         current_containers = []
@@ -451,10 +451,9 @@ class PodmanRunner(BaseRunner):
         self.log.debug("Renaming a container known as %s into %s, "
                        "via re-applying its original config" %
                        (container, name))
-        self.log.debug("Removing the destination container %s" % name)
+        # destination container
         self.stop_container(name)
         self.remove_container(name)
-        self.log.debug("Removing a container known as %s" % container)
         self.stop_container(container)
         self.remove_container(container)
         builder = podman.PodmanBuilder(
@@ -468,6 +467,23 @@ class PodmanRunner(BaseRunner):
         )
         builder.apply()
 
+    def stop_container(self, container, cont_cmd=None, quiet=False):
+        if not self.container_running(container):
+            self.log.debug('%s not running, skipping stop' % container)
+            return
+        self.log.debug("Stopping container: %s" % container)
+        return super(PodmanRunner, self).stop_container(container,
+                                                        cont_cmd,
+                                                        quiet)
+
+    def remove_container(self, container):
+        if not self.container_exist(container):
+            self.log.debug('%s does not exist, skipping remove' % container)
+            return
+        self.log.debug("Removing container: %s" % container)
+        systemd.service_delete(container=container, log=self.log)
+        return super(PodmanRunner, self).remove_container(container)
+
     def image_exist(self, name, quiet=False):
         cmd = ['podman', 'image', 'exists', name]
         (_, _, returncode) = self.execute(cmd, self.log, quiet, True)
@@ -479,6 +495,10 @@ class PodmanRunner(BaseRunner):
         return returncode == 0
 
     def container_running(self, container):
+        if not self.container_exist(container):
+            self.log.debug('%s is not running because it does not exist' %
+                           container)
+            return False
         service_name = 'tripleo_' + container + '.service'
         try:
             systemctl.is_active(service_name)
