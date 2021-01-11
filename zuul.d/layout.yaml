@@ -26,10 +26,6 @@
                 - build
             dependencies: &deps_cprovider
               - tripleo-ci-centos-7-content-provider
-        - tripleo-ci-centos-7-scenario000-multinode-oooq-container-upgrades:
-            dependencies: *deps_unit_lint
-        - tripleo-ci-centos-7-scenario000-multinode-oooq-container-updates:
-            dependencies: *deps_unit_lint
         - tripleo-ci-centos-7-scenario007-multinode-oooq-container:
             vars: *consumer_vars
             dependencies: *deps_cprovider
@@ -52,5 +48,3 @@
             vars: *consumer_vars
             dependencies: *deps_cprovider
 
-# TODO, add tripleo-ci-centos-8-containerized-undercloud-upgrades to check and gate
-# to replace tripleo-ci-centos-7-containerized-undercloud-upgrades
