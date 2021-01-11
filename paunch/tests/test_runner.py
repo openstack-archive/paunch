@@ -485,7 +485,7 @@ class PodmanRunner(TestBaseRunner):
         mock_exists = mock.MagicMock()
         mock_exists.return_value = True
         self.runner = runner.PodmanRunner('tester')
-        self.runner.container_exists = mock_exists
+        self.runner.container_exist = mock_exists
         self.runner.remove_container('foo')
         mock_exists.assert_called_once_with('foo')
         mock_systemd.assert_called_once_with(container='foo',
@@ -498,7 +498,7 @@ class PodmanRunner(TestBaseRunner):
         mock_exists = mock.MagicMock()
         mock_exists.return_value = False
         self.runner = runner.PodmanRunner('tester')
-        self.runner.container_exists = mock_exists
+        self.runner.container_exist = mock_exists
         self.runner.remove_container('foo')
         mock_exists.assert_called_once_with('foo')
         mock_systemd.assert_not_called()

@@ -477,7 +477,7 @@ class PodmanRunner(BaseRunner):
                                                         quiet)
 
     def remove_container(self, container):
-        if not self.container_exists(container):
+        if not self.container_exist(container):
             self.log.debug('%s does not exist, skipping remove' % container)
             return
         self.log.debug("Removing container: %s" % container)
@@ -495,7 +495,7 @@ class PodmanRunner(BaseRunner):
         return returncode == 0
 
     def container_running(self, container):
-        if not self.container_exists(container):
+        if not self.container_exist(container):
             self.log.debug('%s is not running because it does not exist' %
                            container)
             return False
