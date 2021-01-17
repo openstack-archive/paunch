@@ -458,3 +458,48 @@ class PodmanRunner(TestBaseRunner):
         self.assert_execute(
             popen, ['podman', 'container', 'exists', 'one']
         )
+
+    @mock.patch('paunch.runner.BaseRunner.stop_container')
+    def test_stop_container(self, mock_stop):
+        mock_running = mock.MagicMock()
+        mock_running.return_value = True
+        self.runner = runner.PodmanRunner('tester')
+        self.runner.container_running = mock_running
+        self.runner.stop_container('foo')
+        mock_running.assert_called_once_with('foo')
+        mock_stop.assert_called_once_with('foo', None, False)
+
+    @mock.patch('paunch.runner.BaseRunner.stop_container')
+    def test_stop_container_missing(self, mock_stop):
+        mock_running = mock.MagicMock()
+        mock_running.return_value = False
+        self.runner = runner.PodmanRunner('tester')
+        self.runner.container_running = mock_running
+        self.runner.stop_container('foo')
+        mock_running.assert_called_once_with('foo')
+        mock_stop.assert_not_called()
+
+    @mock.patch('paunch.utils.systemd.service_delete')
+    @mock.patch('paunch.runner.BaseRunner.remove_container')
+    def test_remove_container(self, mock_remove, mock_systemd):
+        mock_exists = mock.MagicMock()
+        mock_exists.return_value = True
+        self.runner = runner.PodmanRunner('tester')
+        self.runner.container_exist = mock_exists
+        self.runner.remove_container('foo')
+        mock_exists.assert_called_once_with('foo')
+        mock_systemd.assert_called_once_with(container='foo',
+                                             log=self.runner.log)
+        mock_remove.assert_called_once_with('foo')
+
+    @mock.patch('paunch.utils.systemd.service_delete')
+    @mock.patch('paunch.runner.BaseRunner.remove_container')
+    def test_remove_container_missing(self, mock_remove, mock_systemd):
+        mock_exists = mock.MagicMock()
+        mock_exists.return_value = False
+        self.runner = runner.PodmanRunner('tester')
+        self.runner.container_exist = mock_exists
+        self.runner.remove_container('foo')
+        mock_exists.assert_called_once_with('foo')
+        mock_systemd.assert_not_called()
+        mock_remove.assert_not_called()
