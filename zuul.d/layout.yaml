@@ -22,13 +22,7 @@
               - openstack-tox-py35
               - openstack-tox-py36
               - openstack-tox-py37
-        - tripleo-ci-centos-7-scenario000-multinode-oooq-container-upgrades:
-            dependencies: *deps_unit_lint
-        - tripleo-ci-centos-7-scenario000-multinode-oooq-container-updates:
-            dependencies: *deps_unit_lint
         - tripleo-ci-centos-7-scenario007-multinode-oooq-container:
-            dependencies: *deps_unit_lint
-        - tripleo-ci-centos-7-standalone-upgrade:
             dependencies: *deps_unit_lint
         - tripleo-ci-centos-7-scenario001-standalone:
             dependencies: *deps_unit_lint
@@ -39,6 +33,4 @@
         - tripleo-ci-centos-7-scenario004-standalone:
             dependencies: *deps_unit_lint
         - tripleo-ci-centos-7-scenario012-standalone:
-            dependencies: *deps_unit_lint
-        - tripleo-ci-centos-7-containerized-undercloud-upgrades:
             dependencies: *deps_unit_lint
