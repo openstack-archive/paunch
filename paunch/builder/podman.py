@@ -43,7 +43,9 @@ class PodmanBuilder(base.BaseBuilder):
         # via systemd
         cmd.append('--conmon-pidfile=/var/run/{}.pid'.format(delegate))
 
-        if cconfig.get('detach', True):
+        # (bandini) - We must never use --detach when we call podman create as
+        # it makes no sense whatsoever and podman-3.x errors out on it
+        if 'create' not in cmd and cconfig.get('detach', True):
             cmd.append('--detach=true')
 
         if self.cont_log_path is not None:
