@@ -83,6 +83,7 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
         'wants': wants,
         'restart': restart,
         'stop_grace_period': stop_grace_period,
+        'kill_cgroup_period': 2 * stop_grace_period,
         'sys_exec': '\n'.join(['%s=%s' % (x, y) for x, y in sys_exec.items()]),
     }
     # Ensure we don't have some trailing .requires directory and content for
@@ -103,7 +104,7 @@ ExecReload=/usr/bin/podman kill --signal HUP %(name)s
 ExecStop=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
 ExecStopPost=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
 SuccessExitStatus=137 142 143
-KillMode=none
+TimeoutStopSec=%(kill_cgroup_period)s
 Type=forking
 PIDFile=/var/run/%(name)s.pid
 %(sys_exec)s
