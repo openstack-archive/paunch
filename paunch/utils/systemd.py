@@ -53,6 +53,7 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
 
     restart = cconfig.get('restart', 'always')
     stop_grace_period = cconfig.get('stop_grace_period', '10')
+    kill_mode = cconfig.get('kill_mode', 'control-group')
 
     # Please refer to systemd.exec documentation for those entries
     # https://www.freedesktop.org/software/systemd/man/systemd.exec.html
@@ -84,6 +85,7 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
         'restart': restart,
         'stop_grace_period': stop_grace_period,
         'kill_cgroup_period': 2 * stop_grace_period,
+        'kill_mode': kill_mode,
         'sys_exec': '\n'.join(['%s=%s' % (x, y) for x, y in sys_exec.items()]),
     }
     # Ensure we don't have some trailing .requires directory and content for
@@ -105,6 +107,7 @@ ExecStop=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
 ExecStopPost=/usr/bin/podman stop -t %(stop_grace_period)s %(name)s
 SuccessExitStatus=137 142 143
 TimeoutStopSec=%(kill_cgroup_period)s
+KillMode=%(kill_mode)s
 Type=forking
 PIDFile=/var/run/%(name)s.pid
 %(sys_exec)s
