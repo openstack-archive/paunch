@@ -500,11 +500,10 @@ class PodmanRunner(BaseRunner):
                            container)
             return False
         service_name = 'tripleo_' + container + '.service'
-        try:
-            systemctl.is_active(service_name)
+        if systemctl.is_active(service_name):
             self.log.debug('Unit %s is running' % service_name)
             return True
-        except systemctl.SystemctlException:
+        else:
             chk_cmd = [
                 self.cont_cmd,
                 'ps',

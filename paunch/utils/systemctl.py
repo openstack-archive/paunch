@@ -58,7 +58,19 @@ def reset_failed(service, log=None):
 
 
 def is_active(service, log=None):
-    systemctl(['is-active', '-q', service], log)
+    try:
+        systemctl(['is-active', '-q', service], log)
+        return True
+    except SystemctlException:
+        return False
+
+
+def is_enabled(service, log=None):
+    try:
+        systemctl(['is-enabled', '-q', service], log)
+        return True
+    except SystemctlException:
+        return False
 
 
 def is_masked(service, log=None):
