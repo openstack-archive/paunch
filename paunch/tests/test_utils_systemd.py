@@ -15,6 +15,7 @@
 
 import mock
 import os
+import subprocess
 import tempfile
 
 from paunch.tests import base
@@ -111,6 +112,51 @@ class TestUtilsSystemd(base.TestCase):
             mock.call(os.path.join(tempdir, service_requires_d)),
         ])
 
+    @mock.patch('os.path.isfile', autospec=True)
+    @mock.patch('subprocess.check_call', autospec=True)
+    def test_service_is_active(self, mock_subprocess_check_call, mock_isfile):
+        mock_isfile.return_value = True
+        container = 'my_app'
+        service = 'tripleo_' + container
+        self.assertTrue(systemd.service_is_active(container))
+        mock_isfile.assert_called_once_with(
+            '/etc/systemd/system/' + service + '.service'
+        )
+        mock_subprocess_check_call.assert_has_calls([
+            mock.call(['systemctl', 'is-enabled', '-q', service + '.service']),
+            mock.call(['systemctl', 'is-active', '-q', service + '.service'])
+        ])
+
+    @mock.patch('os.path.isfile', autospec=True)
+    @mock.patch('subprocess.check_call', autospec=True)
+    def test_service_is_active_file_not_exist(self, mock_subprocess_check_call,
+                                              mock_isfile):
+        mock_isfile.return_value = False
+        container = 'my_app'
+        service = 'tripleo_' + container
+        self.assertFalse(systemd.service_is_active(container))
+        mock_isfile.assert_called_once_with(
+            '/etc/systemd/system/' + service + '.service'
+        )
+        self.assertEqual(0, mock_subprocess_check_call.call_count)
+
+    @mock.patch('os.path.isfile', autospec=True)
+    @mock.patch('subprocess.check_call', autospec=True)
+    def test_service_is_active_stopped(self, mock_subprocess_check_call,
+                                       mock_isfile):
+        mock_subprocess_check_call.side_effect = \
+            subprocess.CalledProcessError(1, 'error')
+        mock_isfile.return_value = True
+        container = 'my_app'
+        service = 'tripleo_' + container
+        self.assertFalse(systemd.service_is_active(container))
+        mock_isfile.assert_called_once_with(
+            '/etc/systemd/system/' + service + '.service'
+        )
+        mock_subprocess_check_call.assert_has_calls([
+            mock.call(['systemctl', 'is-enabled', '-q', service + '.service'])
+        ])
+
     @mock.patch('os.chmod')
     def test_healthcheck_create(self, mock_chmod):
         container = 'my_app'
@@ -164,4 +210,51 @@ class TestUtilsSystemd(base.TestCase):
             mock.call(['systemctl', 'add-requires', service + '.service',
                       healthcheck_timer]),
             mock.call(['systemctl', 'daemon-reload']),
+        ])
+
+    @mock.patch('os.path.isfile', autospec=True)
+    @mock.patch('subprocess.check_call', autospec=True)
+    def test_healthcheck_is_active(self, mock_subprocess_check_call,
+                                   mock_isfile):
+        mock_isfile.return_value = True
+        container = 'my_app'
+        healthcheck_timer = 'tripleo_' + container + '_healthcheck.timer'
+        self.assertTrue(systemd.healthcheck_is_active(container))
+        mock_isfile.assert_called_once_with(
+            '/etc/systemd/system/' + healthcheck_timer
+        )
+        mock_subprocess_check_call.assert_has_calls([
+            mock.call(['systemctl', 'is-enabled', '-q', healthcheck_timer]),
+            mock.call(['systemctl', 'is-active', '-q', healthcheck_timer])
+        ])
+
+    @mock.patch('os.path.isfile', autospec=True)
+    @mock.patch('subprocess.check_call', autospec=True)
+    def test_healthcheck_is_active_file_not_exist(self,
+                                                  mock_subprocess_check_call,
+                                                  mock_isfile):
+        mock_isfile.return_value = False
+        container = 'my_app'
+        healthcheck_timer = 'tripleo_' + container + '_healthcheck.timer'
+        self.assertFalse(systemd.healthcheck_is_active(container))
+        mock_isfile.assert_called_once_with(
+            '/etc/systemd/system/' + healthcheck_timer
+        )
+        self.assertEqual(0, mock_subprocess_check_call.call_count)
+
+    @mock.patch('os.path.isfile', autospec=True)
+    @mock.patch('subprocess.check_call', autospec=True)
+    def test_healthcheck_is_active_stopped(self, mock_subprocess_check_call,
+                                           mock_isfile):
+        mock_subprocess_check_call.side_effect = \
+            subprocess.CalledProcessError(1, 'error')
+        mock_isfile.return_value = True
+        container = 'my_app'
+        healthcheck_timer = 'tripleo_' + container + '_healthcheck.timer'
+        self.assertFalse(systemd.healthcheck_is_active(container))
+        mock_isfile.assert_called_once_with(
+            '/etc/systemd/system/' + healthcheck_timer
+        )
+        mock_subprocess_check_call.assert_has_calls([
+            mock.call(['systemctl', 'is-enabled', '-q', healthcheck_timer])
         ])

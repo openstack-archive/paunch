@@ -68,23 +68,39 @@ class BaseBuilder(object):
         desired_names = set([cn[-1] for cn in container_names])
 
         for container in sorted(self.config, key=key_fltr):
-            # Before creating the container, figure out if it needs to be
-            # removed because of its configuration has changed.
-            # If anything has been deleted, refresh the container_names/desired
-            if self.delete_updated(container, container_names):
-                container_names = self.runner.container_names(self.config_id)
-                desired_names = set([cn[-1] for cn in container_names])
-
-            self.log.debug("Running container: %s" % container)
             cconfig = self.config[container]
             action = cconfig.get('action', 'run')
             restart = cconfig.get('restart', 'none')
             exit_codes = cconfig.get('exit_codes', [0])
-            container_name = self.runner.unique_container_name(container)
             systemd_managed = (restart != 'none'
                                and self.runner.cont_cmd == 'podman'
                                and action == 'run')
             start_cmd = 'create' if systemd_managed else 'run'
+
+            force_delete = False
+            if systemd_managed:
+                if not systemd.service_is_active(container, log=self.log):
+                    self.log.debug("Service is not activated. "
+                                   "Recreating the container.")
+                    force_delete = True
+                if ((not self.healthcheck_disabled) and
+                        'healthcheck' in cconfig and
+                        not systemd.healthcheck_is_active(
+                            container=container, log=self.log)):
+                    self.log.debug("Healthcheck is not activated. "
+                                   "Recreating the container.")
+                    force_delete = True
+
+            # Before creating the container, figure out if it needs to be
+            # removed because of its configuration has changed.
+            # This also removes containers with incomplete systemd services.
+            # If anything has been deleted, refresh the container_names/desired
+            if self.delete_updated(container, container_names, force_delete):
+                container_names = self.runner.container_names(self.config_id)
+                desired_names = set([cn[-1] for cn in container_names])
+
+            self.log.debug("Running container: %s" % container)
+            container_name = self.runner.unique_container_name(container)
 
             # When upgrading from Docker to Podman, we want to stop the
             # container that runs under Docker first before starting it with
@@ -203,11 +219,17 @@ class BaseBuilder(object):
                                    "%s" % container)
         return deleted
 
-    def delete_updated(self, container, container_names):
+    def delete_updated(self, container, container_names, force=False):
         # If a container is not deployed, there is nothing to delete
         if (container not in
            list(itertools.chain.from_iterable(container_names))):
             return False
+
+        # delete the container when it is forced
+        if force:
+            self.log.debug("Deleting container (force): %s" % container)
+            self.runner.remove_container(container)
+            return True
 
         # fetch container inspect info
         inspect_info = self.runner.inspect(container)
