@@ -102,43 +102,6 @@ class BaseBuilder(object):
                 if container in desired_names:
                     self.log.debug('Skipping existing container: %s' %
                                    container)
-
-                    if systemd_managed:
-                        try:
-                            if not systemd.service_enabled(
-                                    container=container_name, log=self.log):
-                                self.log.warning(
-                                    'Service for container %s is not '
-                                    'activated. Reactivating' % container_name)
-                                systemd.service_create(
-                                    container=container_name,
-                                    cconfig=cconfig,
-                                    log=self.log)
-
-                            if (not self.healthcheck_disabled and
-                                    'healthcheck' in cconfig and
-                                    not systemd.healthcheck_enabled(
-                                        container=container_name,
-                                        log=self.log)):
-                                self.log.warning(
-                                    'Healthcheck service for container %s is '
-                                    'not activated. Reactivating'
-                                    % container_name)
-                                check = cconfig.get('healthcheck')['test']
-                                systemd.healthcheck_create(
-                                    container=container_name,
-                                    log=self.log,
-                                    test=check)
-                                systemd.healthcheck_timer_create(
-                                    container=container_name,
-                                    cconfig=cconfig,
-                                    log=self.log)
-                        except systemctl.SystemctlMaskedException:
-                            self.log.warning(
-                                'Masked service for container %s '
-                                'is not managed here' % container_name)
-                            pass
-
                     continue
 
                 c_name = self.runner.discover_container_name(

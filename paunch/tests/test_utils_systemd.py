@@ -131,48 +131,6 @@ class TestUtilsSystemd(base.TestCase):
             mock.call(os.path.join(tempdir, service_requires_d)),
         ])
 
-    @mock.patch('os.path.isfile', autospec=True)
-    @mock.patch('subprocess.run', autospec=True)
-    def test_service_is_active(self, mock_subprocess_run, mock_isfile):
-        mock_subprocess_run.return_value = self.r
-        mock_isfile.return_value = True
-        container = 'my_app'
-        service = 'tripleo_' + container
-
-        self.assertTrue(systemd.service_is_active(container))
-        mock_subprocess_run.assert_has_calls([
-            mock.call(['systemctl', 'is-enabled', '-q', service + '.service'],
-                      stderr=-1, stdout=-1, universal_newlines=True),
-            mock.call(['systemctl', 'is-active', '-q', service + '.service'],
-                      stderr=-1, stdout=-1, universal_newlines=True),
-        ])
-
-    @mock.patch('os.path.isfile', autospec=True)
-    @mock.patch('subprocess.run', autospec=True)
-    def test_service_is_active_file_not_exist(self, mock_subprocess_run,
-                                              mock_isfile):
-        mock_subprocess_run.return_value = self.r
-        mock_isfile.return_value = False
-        container = 'my_app'
-
-        self.assertFalse(systemd.service_is_active(container))
-        self.assertEqual(0, mock_subprocess_run.call_count)
-
-    @mock.patch('os.path.isfile', autospec=True)
-    @mock.patch('subprocess.run', autospec=True)
-    def test_service_is_active_stopped(self, mock_subprocess_run, mock_isfile):
-        mock_subprocess_run.return_value = self.r
-        self.r.returncode = 1
-        mock_isfile.return_value = True
-        container = 'my_app'
-        service = 'tripleo_' + container
-
-        self.assertFalse(systemd.service_is_active(container))
-        mock_subprocess_run.assert_has_calls([
-            mock.call(['systemctl', 'is-enabled', '-q', service + '.service'],
-                      stderr=-1, stdout=-1, universal_newlines=True)
-        ])
-
     @mock.patch('os.chmod')
     def test_healthcheck_create(self, mock_chmod):
         container = 'my_app'

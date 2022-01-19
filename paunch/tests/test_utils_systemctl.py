@@ -54,38 +54,9 @@ class TestUtilsSystemctl(base.TestCase):
     @mock.patch('subprocess.run', autospec=True)
     def test_is_active(self, mock_subprocess_run):
         mock_subprocess_run.return_value = self.r
-        self.assertTrue(systemctl.is_active('foo'))
+        systemctl.is_active('foo')
         mock_subprocess_run.assert_has_calls([
             mock.call(['systemctl', 'is-active', '-q', 'foo'],
-                      stderr=-1, stdout=-1, universal_newlines=True)
-        ])
-
-    @mock.patch('subprocess.run', autospec=True)
-    def test_is_active_inactive(self, mock_subprocess_run):
-        self.r.returncode = 1
-        mock_subprocess_run.return_value = self.r
-        self.assertFalse(systemctl.is_active('foo'))
-        mock_subprocess_run.assert_has_calls([
-            mock.call(['systemctl', 'is-active', '-q', 'foo'],
-                      stderr=-1, stdout=-1, universal_newlines=True)
-        ])
-
-    @mock.patch('subprocess.run', autospec=True)
-    def test_is_enabled(self, mock_subprocess_run):
-        mock_subprocess_run.return_value = self.r
-        self.assertTrue(systemctl.is_enabled('foo'))
-        mock_subprocess_run.assert_has_calls([
-            mock.call(['systemctl', 'is-enabled', '-q', 'foo'],
-                      stderr=-1, stdout=-1, universal_newlines=True)
-        ])
-
-    @mock.patch('subprocess.run', autospec=True)
-    def test_is_enabled_disabled(self, mock_subprocess_run):
-        self.r.returncode = 1
-        mock_subprocess_run.return_value = self.r
-        self.assertFalse(systemctl.is_enabled('foo'))
-        mock_subprocess_run.assert_has_calls([
-            mock.call(['systemctl', 'is-enabled', '-q', 'foo'],
                       stderr=-1, stdout=-1, universal_newlines=True)
         ])
 
