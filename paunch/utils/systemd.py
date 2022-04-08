@@ -84,7 +84,7 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
         'wants': wants,
         'restart': restart,
         'stop_grace_period': stop_grace_period,
-        'kill_cgroup_period': 2 * stop_grace_period,
+        'kill_cgroup_period': 2 * int(stop_grace_period),
         'kill_mode': kill_mode,
         'sys_exec': '\n'.join(['%s=%s' % (x, y) for x, y in sys_exec.items()]),
     }
