@@ -14,6 +14,7 @@
 # under the License.
 
 import mock
+import subprocess
 
 from paunch.tests import base
 from paunch.utils import systemctl
@@ -43,9 +44,34 @@ class TestUtilsSystemctl(base.TestCase):
 
     @mock.patch('subprocess.check_call', autospec=True)
     def test_is_active(self, mock_subprocess_check_call):
-        systemctl.is_active('foo')
+        self.assertTrue(systemctl.is_active('foo'))
         mock_subprocess_check_call.assert_has_calls([
-            mock.call(['systemctl', 'is-active', '-q', 'foo']),
+            mock.call(['systemctl', 'is-active', '-q', 'foo'])
+        ])
+
+    @mock.patch('subprocess.check_call', autospec=True)
+    def test_is_active_inactive(self, mock_subprocess_check_call):
+        mock_subprocess_check_call.side_effect = \
+            subprocess.CalledProcessError(1, 'error')
+        self.assertFalse(systemctl.is_active('foo'))
+        mock_subprocess_check_call.assert_has_calls([
+            mock.call(['systemctl', 'is-active', '-q', 'foo'])
+        ])
+
+    @mock.patch('subprocess.check_call', autospec=True)
+    def test_is_enabled(self, mock_subprocess_check_call):
+        self.assertTrue(systemctl.is_enabled('foo'))
+        mock_subprocess_check_call.assert_has_calls([
+            mock.call(['systemctl', 'is-enabled', '-q', 'foo'])
+        ])
+
+    @mock.patch('subprocess.check_call', autospec=True)
+    def test_is_enabled_disabled(self, mock_subprocess_check_call):
+        mock_subprocess_check_call.side_effect = \
+            subprocess.CalledProcessError(1, 'error')
+        self.assertFalse(systemctl.is_enabled('foo'))
+        mock_subprocess_check_call.assert_has_calls([
+            mock.call(['systemctl', 'is-enabled', '-q', 'foo'])
         ])
 
     @mock.patch('subprocess.check_call', autospec=True)

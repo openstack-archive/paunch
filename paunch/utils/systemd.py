@@ -163,7 +163,20 @@ def service_delete(container, sysdir=constants.SYSTEMD_DIR, log=None):
             shutil.rmtree(os.path.join(sysdir, sysd_health_req_d))
 
 
-def healthcheck_create(container, sysdir='/etc/systemd/system/',
+def service_is_active(container, sysdir=constants.SYSTEMD_DIR, log=None):
+    log = log or common.configure_logging(__name__)
+    # prefix is explained in the service_create().
+    service = 'tripleo_' + container
+
+    sysd_unit_f = systemctl.format_name(service)
+    if not os.path.isfile(sysdir + sysd_unit_f):
+        return False
+
+    return (systemctl.is_enabled(sysd_unit_f) and
+            systemctl.is_active(sysd_unit_f))
+
+
+def healthcheck_create(container, sysdir=constants.SYSTEMD_DIR,
                        log=None, test='/openstack/healthcheck'):
     """Create a healthcheck for a service in systemd
 
@@ -256,3 +269,18 @@ WantedBy=timers.target""" % s_config)
     except systemctl.SystemctlException:
         log.exception("systemctl failed")
         raise
+
+
+def healthcheck_is_active(container, sysdir=constants.SYSTEMD_DIR,
+                          log=None):
+    log = log or common.configure_logging(__name__)
+
+    service = 'tripleo_' + container
+    healthcheck_timer = service + '_healthcheck.timer'
+    sysd_timer_f = sysdir + healthcheck_timer
+
+    if not os.path.isfile(sysd_timer_f):
+        return False
+
+    return (systemctl.is_enabled(healthcheck_timer)
+            and systemctl.is_active(healthcheck_timer))
