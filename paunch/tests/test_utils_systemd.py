@@ -40,6 +40,7 @@ class TestUtilsSystemd(base.TestCase):
         sysd_unit_f = tempdir + service + '.service'
         unit = open(sysd_unit_f, 'rt').read()
         self.assertIn('Wants=something.service', unit)
+        self.assertIn('After=something.service', unit)
         self.assertIn('Restart=always', unit)
         self.assertIn('ExecStop=/usr/bin/podman stop -t 15 my_app', unit)
         self.assertIn('ExecStopPost=/usr/bin/podman stop -t 15 my_app', unit)

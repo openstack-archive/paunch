@@ -1,10 +1,10 @@
 - project:
+    queue: tripleo
     templates:
       - openstack-python3-train-jobs
       - check-requirements
       - publish-openstack-docs-pti
       - openstack-python-jobs
-      - release-notes-jobs-python3
     check:
       jobs:
         - tripleo-ci-centos-8-content-provider
@@ -28,7 +28,6 @@
               - ^test-requirements.txt$
               - tox.ini
     gate:
-      queue: tripleo
       jobs:
         - tripleo-ci-centos-8-content-provider
         - tripleo-ci-centos-8-scenario004-standalone:

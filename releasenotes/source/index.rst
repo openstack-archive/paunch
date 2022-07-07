@@ -9,5 +9,4 @@
    stein
    rocky
    queens
-   queens
    pike

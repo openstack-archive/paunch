@@ -50,6 +50,7 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
 
     wants = " ".join(systemctl.format_name(str(x)) for x in
                      cconfig.get('depends_on', []))
+    after = wants
 
     restart = cconfig.get('restart', 'always')
     stop_grace_period = cconfig.get('stop_grace_period', '10')
@@ -82,6 +83,7 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
         'name': container,
         'start_cmd': start_cmd,
         'wants': wants,
+        'after': after,
         'restart': restart,
         'stop_grace_period': stop_grace_period,
         'kill_cgroup_period': 2 * int(stop_grace_period),
@@ -99,6 +101,7 @@ def service_create(container, cconfig, sysdir=constants.SYSTEMD_DIR, log=None):
 Description=%(name)s container
 After=paunch-container-shutdown.service
 Wants=%(wants)s
+After=%(after)s
 [Service]
 Restart=%(restart)s
 ExecStart=%(start_cmd)s
